@@ -92,45 +92,21 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 md:gap-6 fade-in">
             {/* Tasks */}
             <Card className="card-shadow overflow-hidden">
-              <CardHeader className="flex-row items-center justify-between space-y-0 pb-4 border-b">
+              <CardHeader className="pb-3 border-b">
                 <div>
                   <CardTitle className="text-base font-semibold">Tasks</CardTitle>
                   <CardDescription className="text-xs mt-0.5">
-                    {pendingTasks.length} pending &middot; {completedTasks.length}{' '}
-                    done
+                    {hasTasks
+                      ? `${pendingTasks.length} pending · ${completedTasks.length} done`
+                      : 'No tasks yet'}
                   </CardDescription>
                 </div>
-                <TaskFormDialog onAdd={addTask} />
               </CardHeader>
               <CardContent className="p-0">
-                {!hasTasks ? (
-                  <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                      <svg
-                        className="h-6 w-6 text-muted-foreground/50"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      No tasks yet
-                    </p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      Add a task with a reminder time to get started.
-                    </p>
-                  </div>
-                ) : (
+                {hasTasks && (
                   <div className="divide-y">
                     {pendingTasks.length > 0 && (
-                      <div className="px-0.5">
+                      <div>
                         {pendingTasks.map((task) => (
                           <TaskItem
                             key={task.id}
@@ -142,7 +118,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                     {completedTasks.length > 0 && (
-                      <div className="px-0.5">
+                      <div>
                         {completedTasks.map((task) => (
                           <TaskItem
                             key={task.id}
@@ -155,50 +131,29 @@ export default function DashboardPage() {
                     )}
                   </div>
                 )}
+                <div className="px-4 py-2 border-t">
+                  <TaskFormDialog onAdd={addTask} />
+                </div>
               </CardContent>
             </Card>
 
             {/* Todos */}
             <Card className="card-shadow overflow-hidden">
-              <CardHeader className="flex-row items-center justify-between space-y-0 pb-4 border-b">
+              <CardHeader className="pb-3 border-b">
                 <div>
                   <CardTitle className="text-base font-semibold">Todos</CardTitle>
                   <CardDescription className="text-xs mt-0.5">
-                    {pendingTodos.length} pending &middot; {completedTodos.length}{' '}
-                    done
+                    {hasTodos
+                      ? `${pendingTodos.length} pending · ${completedTodos.length} done`
+                      : 'No todos yet'}
                   </CardDescription>
                 </div>
-                <TodoFormDialog onAdd={addTodo} />
               </CardHeader>
               <CardContent className="p-0">
-                {!hasTodos ? (
-                  <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                      <svg
-                        className="h-6 w-6 text-muted-foreground/50"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      No todos yet
-                    </p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      Organize your work with categorized todo items.
-                    </p>
-                  </div>
-                ) : (
+                {hasTodos && (
                   <div className="divide-y">
                     {pendingTodos.length > 0 && (
-                      <div className="px-0.5">
+                      <div>
                         {pendingTodos.map((todo) => (
                           <TodoItem
                             key={todo.id}
@@ -210,7 +165,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                     {completedTodos.length > 0 && (
-                      <div className="px-0.5">
+                      <div>
                         {completedTodos.map((todo) => (
                           <TodoItem
                             key={todo.id}
@@ -223,6 +178,9 @@ export default function DashboardPage() {
                     )}
                   </div>
                 )}
+                <div className="px-4 py-2 border-t">
+                  <TodoFormDialog onAdd={addTodo} />
+                </div>
               </CardContent>
             </Card>
           </div>
