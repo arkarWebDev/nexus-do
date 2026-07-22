@@ -132,11 +132,10 @@
 
 <section id="overview">
   <h2>Overview</h2>
-  <p>NexusDo is a full-stack task manager: a NestJS backend, Next.js frontend, PostgreSQL database, and Telegram bot — all containerized with Docker Compose and served behind Nginx.</p>
+  <p>NexusDo is a full-stack task manager: a NestJS backend, Next.js frontend, a Telegram bot, and Neon PostgreSQL — all containerized with Docker Compose and served behind Nginx.</p>
   <div class="card">
     <table>
       <tr><th>Service</th><th>Port</th><th>What it does</th></tr>
-      <tr><td>PostgreSQL</td><td>5432 (internal)</td><td>Stores users, tasks, and todos</td></tr>
       <tr><td>Backend (NestJS)</td><td>3001 (internal)</td><td>REST API, bot, cron reminders</td></tr>
       <tr><td>Frontend (Next.js)</td><td>3000 (internal)</td><td>Web dashboard</td></tr>
       <tr><td>Nginx</td><td>80 / 443</td><td>Reverse proxy + SSL termination</td></tr>
@@ -146,7 +145,7 @@
 
 <section id="prerequisites">
   <h2>Before You Start</h2>
-  <p>You need a Linux VPS (Ubuntu 22.04 recommended) with at least <strong>1 GB RAM</strong> and a domain name pointed to its IP address.</p>
+  <p>You need a Linux VPS (Ubuntu 22.04 recommended) with at least <strong>1 GB RAM</strong>, a domain name pointed to its IP address, and a <strong>Neon PostgreSQL</strong> database. Sign up at <a href="https://neon.tech" target="_blank">neon.tech</a> (free tier works) and copy your connection string.</p>
   <div class="step">
     <div class="step-num">1</div>
     <div class="step-body">
@@ -185,14 +184,12 @@ nano .env</code></pre>
       <p>Fill in these values:</p>
       <table>
         <tr><th>Variable</th><th>What to set</th></tr>
-        <tr><td><code>POSTGRES_USER</code></td><td>Database username (default: nexusdo)</td></tr>
-        <tr><td><code>POSTGRES_PASSWORD</code></td><td>Strong database password — change this!</td></tr>
-        <tr><td><code>POSTGRES_DB</code></td><td>Database name (default: nexusdo)</td></tr>
+        <tr><td><code>DATABASE_URL</code></td><td>Your Neon PostgreSQL connection string (from the Neon dashboard)</td></tr>
         <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Your bot token from <a href="https://t.me/BotFather">@BotFather</a></td></tr>
         <tr><td><code>CORS_ORIGIN</code></td><td>Your domain (e.g. https://nexusdo.example.com)</td></tr>
       </table>
-      <div class="warning">
-        Use a strong <code>POSTGRES_PASSWORD</code>. Do not use the default.
+      <div class="tip">
+        Your Neon connection string looks like: <code>postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/db?sslmode=require</code>
       </div>
     </div>
   </div>
@@ -205,7 +202,7 @@ nano .env</code></pre>
     <div class="step-body">
       <h3>Build and launch all services</h3>
       <pre><code>docker compose up -d --build</code></pre>
-      <p>This builds the backend and frontend images, pulls PostgreSQL and Nginx, and starts everything. The database auto-creates tables on the first run.</p>
+      <p>This builds the backend and frontend images, pulls Nginx, and starts everything. The backend automatically runs database migrations on startup.</p>
     </div>
   </div>
   <div class="step">
@@ -213,7 +210,7 @@ nano .env</code></pre>
     <div class="step-body">
       <h3>Check that everything is running</h3>
       <pre><code>docker compose ps</code></pre>
-      <p>You should see all 6 services with status <strong>Up</strong>. Check logs if something is wrong:</p>
+      <p>You should see all 4 services with status <strong>Up</strong>. Check logs if something is wrong:</p>
       <pre><code>docker compose logs backend
 docker compose logs frontend</code></pre>
     </div>
@@ -340,16 +337,6 @@ docker compose up -d --build</code></pre>
 
     <h3 style="margin-top: 1.25rem">Stop everything</h3>
     <pre><code>docker compose down</code></pre>
-
-    <h3 style="margin-top: 1.25rem">Reset database (⚠ destroys all data)</h3>
-    <pre><code>docker compose down -v
-docker compose up -d --build</code></pre>
-
-    <h3 style="margin-top: 1.25rem">Backup the database</h3>
-    <pre><code>docker compose exec db pg_dump -U nexusdo nexusdo > backup.sql</code></pre>
-
-    <h3 style="margin-top: 1.25rem">Restore from backup</h3>
-    <pre><code>docker compose exec -T db psql -U nexusdo nexusdo < backup.sql</code></pre>
   </div>
 </section>
 
