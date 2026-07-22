@@ -184,7 +184,7 @@ export default function SettingsPage() {
                       Link your Telegram account by sending this command to your bot:
                     </p>
                     <code className="block mt-2 text-sm font-mono bg-background rounded-md p-2 border break-all select-all">
-                      /start {profile.apiKey}
+                      /start {showKey ? profile.apiKey : maskedKey}
                     </code>
                   </div>
                 </div>
