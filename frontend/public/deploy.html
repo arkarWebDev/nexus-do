@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deploy NexusDo — Production Guide</title>
+  <style>
+    :root {
+      --bg: #f8f8fb;
+      --fg: #1a1a2e;
+      --muted: #6b7280;
+      --primary: #5b5fef;
+      --card: #fff;
+      --border: #e5e7eb;
+      --code-bg: #f3f4f6;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.7;
+    }
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+    header h1 { font-size: 1.75rem; font-weight: 700; }
+    header p { color: var(--muted); margin-top: 0.25rem; font-size: 0.95rem; }
+    main { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--primary);
+      display: inline-block;
+    }
+    h3 { font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    p { color: var(--muted); font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+    code {
+      background: var(--code-bg);
+      padding: 0.2em 0.4em;
+      border-radius: 4px;
+      font-size: 0.9em;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    pre code { background: none; padding: 0; font-size: inherit; }
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .step-body h3 { margin-top: 0; }
+    .step-body p { margin-bottom: 0.25rem; }
+    .warning {
+      border-left: 3px solid #f59e0b;
+      background: #fffbeb;
+      padding: 0.75rem 1rem;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      color: #92400e;
+      margin: 1rem 0;
+    }
+    .tip {
+      border-left: 3px solid var(--primary);
+      background: #eef2ff;
+      padding: 0.75rem 1rem;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      color: #3730a3;
+      margin: 1rem 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th { font-weight: 600; color: var(--fg); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { color: var(--muted); }
+    .footer { text-align: center; margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Deploy NexusDo to Production</h1>
+  <p>A step-by-step guide to running NexusDo on a VPS with Docker</p>
+</header>
+
+<main>
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p>NexusDo is a full-stack task manager: a NestJS backend, Next.js frontend, PostgreSQL database, and Telegram bot — all containerized with Docker Compose and served behind Nginx.</p>
+  <div class="card">
+    <table>
+      <tr><th>Service</th><th>Port</th><th>What it does</th></tr>
+      <tr><td>PostgreSQL</td><td>5432 (internal)</td><td>Stores users, tasks, and todos</td></tr>
+      <tr><td>Backend (NestJS)</td><td>3001 (internal)</td><td>REST API, bot, cron reminders</td></tr>
+      <tr><td>Frontend (Next.js)</td><td>3000 (internal)</td><td>Web dashboard</td></tr>
+      <tr><td>Nginx</td><td>80 / 443</td><td>Reverse proxy + SSL termination</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="prerequisites">
+  <h2>Before You Start</h2>
+  <p>You need a Linux VPS (Ubuntu 22.04 recommended) with at least <strong>1 GB RAM</strong> and a domain name pointed to its IP address.</p>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h3>Install Docker and Docker Compose</h3>
+      <pre><code>sudo apt update && sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker $USER
+# Log out and back in for group changes to take effect</code></pre>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h3>Verify installation</h3>
+      <pre><code>docker --version
+docker compose version</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="setup">
+  <h2>Clone and Configure</h2>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h3>Clone the repository</h3>
+      <pre><code>git clone https://github.com/arkarWebDev/nexus-do.git
+cd nexus-do</code></pre>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h3>Create your .env file</h3>
+      <pre><code>cp .env.example .env
+nano .env</code></pre>
+      <p>Fill in these values:</p>
+      <table>
+        <tr><th>Variable</th><th>What to set</th></tr>
+        <tr><td><code>POSTGRES_USER</code></td><td>Database username (default: nexusdo)</td></tr>
+        <tr><td><code>POSTGRES_PASSWORD</code></td><td>Strong database password — change this!</td></tr>
+        <tr><td><code>POSTGRES_DB</code></td><td>Database name (default: nexusdo)</td></tr>
+        <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Your bot token from <a href="https://t.me/BotFather">@BotFather</a></td></tr>
+        <tr><td><code>CORS_ORIGIN</code></td><td>Your domain (e.g. https://nexusdo.example.com)</td></tr>
+      </table>
+      <div class="warning">
+        Use a strong <code>POSTGRES_PASSWORD</code>. Do not use the default.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <h2>Start the Application</h2>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <h3>Build and launch all services</h3>
+      <pre><code>docker compose up -d --build</code></pre>
+      <p>This builds the backend and frontend images, pulls PostgreSQL and Nginx, and starts everything. The database auto-creates tables on the first run.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <h3>Check that everything is running</h3>
+      <pre><code>docker compose ps</code></pre>
+      <p>You should see all 6 services with status <strong>Up</strong>. Check logs if something is wrong:</p>
+      <pre><code>docker compose logs backend
+docker compose logs frontend</code></pre>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-body">
+      <h3>Verify the app works</h3>
+      <p>Visit your server's IP in the browser. You should see the NexusDo login page. Click <strong>Create account</strong> to register and test the full flow.</p>
+    </div>
+  </div>
+</section>
+
+<section id="ssl">
+  <h2>Enable HTTPS (SSL)</h2>
+  <div class="tip">
+    You must have a domain pointing to your VPS IP before this step. DNS changes can take a few minutes to propagate.
+  </div>
+  <div class="step">
+    <div class="step-num">8</div>
+    <div class="step-body">
+      <h3>Get an SSL certificate from Let's Encrypt</h3>
+      <pre><code>docker compose run --rm certbot certonly \
+  --webroot --webroot-path=/var/www/certbot \
+  --email you@example.com --agree-tos --no-eff-email \
+  -d your-domain.com</code></pre>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">9</div>
+    <div class="step-body">
+      <h3>Create the SSL nginx config</h3>
+      <p>Create a new nginx file that includes SSL:</p>
+      <pre><code>cat > nginx-ssl.conf << 'NGINX'
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    client_max_body_size 10m;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location /api {
+        proxy_pass http://backend:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://frontend:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+NGINX</code></pre>
+      <p>Replace <code>your-domain.com</code> with your real domain (6 places in the file above).</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">10</div>
+    <div class="step-body">
+      <h3>Update docker-compose.yml to use the SSL config</h3>
+      <p>In <code>docker-compose.yml</code>, change the nginx volume line:</p>
+      <pre><code># Change this:
+- ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+# To this:
+- ./nginx-ssl.conf:/etc/nginx/conf.d/default.conf:ro</code></pre>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">11</div>
+    <div class="step-body">
+      <h3>Apply SSL and restart nginx</h3>
+      <pre><code>docker compose up -d --force-recreate nginx</code></pre>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">12</div>
+    <div class="step-body">
+      <h3>Enable automatic SSL renewal</h3>
+      <pre><code># Add a cron job to renew every week
+echo "0 3 * * 1 cd ~/nexus-do && docker compose run --rm certbot renew && docker compose exec nginx nginx -s reload" | crontab -</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="maintenance">
+  <h2>Maintenance Commands</h2>
+  <div class="card">
+    <h3>View logs</h3>
+    <pre><code>docker compose logs -f backend
+docker compose logs -f frontend</code></pre>
+
+    <h3 style="margin-top: 1.25rem">Restart a service</h3>
+    <pre><code>docker compose restart backend</code></pre>
+
+    <h3 style="margin-top: 1.25rem">Update the app</h3>
+    <pre><code>git pull
+docker compose up -d --build</code></pre>
+
+    <h3 style="margin-top: 1.25rem">Stop everything</h3>
+    <pre><code>docker compose down</code></pre>
+
+    <h3 style="margin-top: 1.25rem">Reset database (⚠ destroys all data)</h3>
+    <pre><code>docker compose down -v
+docker compose up -d --build</code></pre>
+
+    <h3 style="margin-top: 1.25rem">Backup the database</h3>
+    <pre><code>docker compose exec db pg_dump -U nexusdo nexusdo > backup.sql</code></pre>
+
+    <h3 style="margin-top: 1.25rem">Restore from backup</h3>
+    <pre><code>docker compose exec -T db psql -U nexusdo nexusdo < backup.sql</code></pre>
+  </div>
+</section>
+
+<div class="footer">
+  NexusDo &mdash; Built with NestJS, Next.js, PostgreSQL, and Docker
+</div>
+
+</main>
+</body>
+</html>
