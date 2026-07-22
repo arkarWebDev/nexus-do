@@ -5,6 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { Todo } from '@/types';
 
+const categoryColors: Record<string, string> = {
+  Work: 'oklch(0.48 0.18 270)',
+  Personal: 'oklch(0.55 0.15 160)',
+  Health: 'oklch(0.55 0.2 22)',
+  Finance: 'oklch(0.65 0.18 85)',
+  Learning: 'oklch(0.5 0.18 330)',
+  General: 'oklch(0.45 0.03 260)',
+};
+
+function getCategoryColor(category: string): string {
+  return categoryColors[category] ?? categoryColors.General;
+}
+
 interface TodoItemProps {
   todo: Todo;
   onToggle: (id: number) => void;
@@ -16,44 +29,62 @@ export const TodoItem = memo(function TodoItem({
   onToggle,
   onDelete,
 }: TodoItemProps) {
+  const color = getCategoryColor(todo.category);
+
   return (
-    <li
-      className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/50 ${
-        todo.isCompleted ? 'opacity-60' : ''
+    <div
+      className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40 ${
+        todo.isCompleted ? 'opacity-50' : ''
       }`}
     >
-      <button
-        type="button"
-        className="flex items-center gap-3 flex-1 min-w-0 text-left"
-        onClick={() => onToggle(todo.id)}
-      >
-        <Checkbox
-          checked={todo.isCompleted}
-          className="shrink-0 pointer-events-none"
-        />
-        <div className="min-w-0">
-          <p
-            className={`text-sm font-medium truncate ${
-              todo.isCompleted ? 'line-through' : ''
-            }`}
+      <Checkbox
+        checked={todo.isCompleted}
+        className="shrink-0 mt-0.5 data-[state=checked]:bg-success data-[state=checked]:border-success"
+        onCheckedChange={() => onToggle(todo.id)}
+      />
+      <div className="flex-1 min-w-0">
+        <p
+          className={`text-sm truncate ${
+            todo.isCompleted
+              ? 'line-through text-muted-foreground'
+              : 'font-medium'
+          }`}
+        >
+          {todo.action}
+        </p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: `${color}15`,
+              color,
+            }}
           >
-            {todo.action}
-          </p>
-          <p className="text-xs text-muted-foreground">{todo.category}</p>
+            {todo.category}
+          </span>
         </div>
-      </button>
+      </div>
       <Button
         variant="ghost"
         size="icon"
-        className="shrink-0 h-7 w-7 text-muted-foreground hover:text-destructive"
+        className="shrink-0 h-7 w-7 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
         aria-label="Delete todo"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(todo.id);
-        }}
+        onClick={() => onDelete(todo.id)}
       >
-        <span aria-hidden>&times;</span>
+        <svg
+          className="h-3.5 w-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
       </Button>
-    </li>
+    </div>
   );
 });

@@ -35,8 +35,6 @@ export function TaskFormDialog({ onAdd }: TaskFormDialogProps) {
       setDate('');
       setTime('');
       setOpen(false);
-    } catch {
-      // error handled by parent
     } finally {
       setSubmitting(false);
     }
@@ -48,25 +46,30 @@ export function TaskFormDialog({ onAdd }: TaskFormDialogProps) {
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Task</DialogTitle>
+            <DialogTitle>New Task</DialogTitle>
             <DialogDescription>
-              Schedule a reminder with an action
+              Create a task with a reminder time.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="task-action">Action</Label>
+              <Label htmlFor="task-action" className="text-xs font-medium">
+                What needs to be done?
+              </Label>
               <Input
                 id="task-action"
-                placeholder="What do you need to do?"
+                placeholder="e.g. Submit quarterly report"
                 value={action}
                 onChange={(e) => setAction(e.target.value)}
                 required
+                autoFocus
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="task-date">Date</Label>
+                <Label htmlFor="task-date" className="text-xs font-medium">
+                  Date
+                </Label>
                 <Input
                   id="task-date"
                   type="date"
@@ -76,7 +79,9 @@ export function TaskFormDialog({ onAdd }: TaskFormDialogProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="task-time">Time</Label>
+                <Label htmlFor="task-time" className="text-xs font-medium">
+                  Time
+                </Label>
                 <Input
                   id="task-time"
                   type="time"

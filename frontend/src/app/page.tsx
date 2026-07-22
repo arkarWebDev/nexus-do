@@ -26,15 +26,13 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && apiKey) {
-      router.replace('/dashboard');
-    }
+    if (!isLoading && apiKey) router.replace('/dashboard');
   }, [apiKey, isLoading, router]);
 
   if (isLoading || apiKey) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <div className="h-6 w-6 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
@@ -54,7 +52,11 @@ export default function HomePage() {
     setRegistering(true);
     setError('');
     try {
-      const data = await apiPost<RegisterResponse>('/users/register', {}, null);
+      const data = await apiPost<RegisterResponse>(
+        '/users/register',
+        {},
+        null,
+      );
       setNewKey(data.apiKey);
       setApiKey(data.apiKey);
     } catch (err) {
@@ -69,41 +71,72 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-dvh flex items-center justify-center p-4">
-      <Card className="w-full max-w-sm sm:max-w-md">
-        <CardHeader className="text-center sm:text-left">
-          <CardTitle className="text-2xl font-semibold">NexusDo</CardTitle>
+    <main className="min-h-dvh relative flex items-center justify-center p-4">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-primary/5 to-transparent" />
+        <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-to-tr from-accent/10 to-transparent" />
+      </div>
+
+      <Card className="w-full max-w-sm sm:max-w-md card-shadow fade-in">
+        <CardHeader className="text-center space-y-1 pb-6">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <svg
+              className="h-6 w-6 text-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+              />
+            </svg>
+          </div>
+          <CardTitle className="text-2xl">NexusDo</CardTitle>
           <CardDescription>
             {mode === 'login'
-              ? 'Enter your API key to access your dashboard'
-              : 'Create a new account to get started'}
+              ? 'Sign in with your API key'
+              : 'Create a new account to begin'}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           {newKey ? (
-            <div className="space-y-4">
-              <div className="rounded-lg bg-muted p-4">
-                <p className="text-sm font-medium mb-2">Your API Key</p>
-                <p className="text-sm font-mono break-all select-all bg-background rounded-md p-2 border">
-                  {newKey}
+            <div className="space-y-5 fade-in">
+              <div className="rounded-xl bg-gradient-to-br from-success/5 to-primary/5 border border-success/20 p-5">
+                <p className="text-xs font-medium text-success uppercase tracking-wider mb-2">
+                  Account created
                 </p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Save this key — you&apos;ll need it to sign in and link your
+                  Telegram account.
+                </p>
+                <div className="rounded-lg bg-background/80 border px-3 py-2.5">
+                  <p className="text-sm font-mono font-medium break-all select-all text-foreground">
+                    {newKey}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Copy and save this key — you&apos;ll need it to log in and link
-                your Telegram account.
-              </p>
-              <Button className="w-full" onClick={() => router.push('/dashboard')}>
-                Go to Dashboard
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => router.push('/dashboard')}
+              >
+                Open Dashboard
               </Button>
             </div>
           ) : mode === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="apiKey">API Key</Label>
+                <Label htmlFor="apiKey" className="text-xs font-medium">
+                  API Key
+                </Label>
                 <Input
                   id="apiKey"
                   type="text"
-                  placeholder="Paste your API key"
+                  placeholder="Paste your key..."
+                  className="h-11"
                   value={inputKey}
                   onChange={(e) => {
                     setInputKey(e.target.value);
@@ -111,49 +144,57 @@ export default function HomePage() {
                   }}
                 />
                 {error && (
-                  <p className="text-sm text-destructive">{error}</p>
+                  <p className="text-sm text-destructive font-medium">{error}</p>
                 )}
               </div>
-              <Button type="submit" className="w-full">
-                Access Dashboard
+              <Button type="submit" className="w-full" size="lg">
+                Sign In
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                Don&apos;t have an account?{' '}
+                New to NexusDo?{' '}
                 <button
                   type="button"
-                  className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  className="font-medium text-primary hover:underline underline-offset-2 transition-colors"
                   onClick={() => {
                     setMode('register');
                     setError('');
                   }}
                 >
-                  Register
+                  Create account
                 </button>
               </p>
             </form>
           ) : (
             <div className="space-y-4">
               {error && (
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive font-medium">{error}</p>
               )}
               <Button
                 className="w-full"
+                size="lg"
                 onClick={handleRegister}
                 disabled={registering}
               >
-                {registering ? 'Creating account...' : 'Create Account'}
+                {registering ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    Creating account...
+                  </span>
+                ) : (
+                  'Create Free Account'
+                )}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{' '}
                 <button
                   type="button"
-                  className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  className="font-medium text-primary hover:underline underline-offset-2 transition-colors"
                   onClick={() => {
                     setMode('login');
                     setError('');
                   }}
                 >
-                  Login
+                  Sign in
                 </button>
               </p>
             </div>

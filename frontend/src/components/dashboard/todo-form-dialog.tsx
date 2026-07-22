@@ -33,8 +33,6 @@ export function TodoFormDialog({ onAdd }: TodoFormDialogProps) {
       setAction('');
       setCategory('');
       setOpen(false);
-    } catch {
-      // error handled by parent
     } finally {
       setSubmitting(false);
     }
@@ -46,27 +44,32 @@ export function TodoFormDialog({ onAdd }: TodoFormDialogProps) {
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Todo</DialogTitle>
+            <DialogTitle>New Todo</DialogTitle>
             <DialogDescription>
-              Create a new todo with a category
+              Add an item with a category to stay organized.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="todo-action">Action</Label>
+              <Label htmlFor="todo-action" className="text-xs font-medium">
+                What needs to be done?
+              </Label>
               <Input
                 id="todo-action"
-                placeholder="What do you need to do?"
+                placeholder="e.g. Review pull request"
                 value={action}
                 onChange={(e) => setAction(e.target.value)}
                 required
+                autoFocus
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="todo-category">Category</Label>
+              <Label htmlFor="todo-category" className="text-xs font-medium">
+                Category
+              </Label>
               <Input
                 id="todo-category"
-                placeholder="e.g. Work, Personal"
+                placeholder="e.g. Work, Personal, Health"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 required
