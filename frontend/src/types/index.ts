@@ -17,3 +17,8 @@ export interface Todo {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface RegisterResponse {
+  id: number;
+  apiKey: string;
+}

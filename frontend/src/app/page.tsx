@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { apiPost } from '@/lib/api';
+import { apiPost, ApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import type { RegisterResponse } from '@/types';
 
 export default function HomePage() {
   const { apiKey, setApiKey, isLoading } = useAuth();
@@ -30,15 +31,13 @@ export default function HomePage() {
     }
   }, [apiKey, isLoading, router]);
 
-  if (isLoading) {
+  if (isLoading || apiKey) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-dvh flex items-center justify-center">
+        <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
-
-  if (apiKey) return null;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,16 +54,14 @@ export default function HomePage() {
     setRegistering(true);
     setError('');
     try {
-      const data = await apiPost<{ id: number; apiKey: string }>(
-        '/users/register',
-        {},
-        null,
-      );
+      const data = await apiPost<RegisterResponse>('/users/register', {}, null);
       setNewKey(data.apiKey);
       setApiKey(data.apiKey);
-    } catch (err: unknown) {
+    } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Registration failed. Is the backend running?',
+        err instanceof ApiError
+          ? err.message
+          : 'Registration failed. Is the backend running?',
       );
     } finally {
       setRegistering(false);
@@ -72,10 +69,10 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">NexusDo</CardTitle>
+    <main className="min-h-dvh flex items-center justify-center p-4">
+      <Card className="w-full max-w-sm sm:max-w-md">
+        <CardHeader className="text-center sm:text-left">
+          <CardTitle className="text-2xl font-semibold">NexusDo</CardTitle>
           <CardDescription>
             {mode === 'login'
               ? 'Enter your API key to access your dashboard'
@@ -85,13 +82,15 @@ export default function HomePage() {
         <CardContent className="space-y-4">
           {newKey ? (
             <div className="space-y-4">
-              <div className="rounded-md bg-muted p-4">
-                <p className="text-sm font-medium mb-1">Your API Key</p>
-                <p className="text-sm font-mono break-all select-all">{newKey}</p>
+              <div className="rounded-lg bg-muted p-4">
+                <p className="text-sm font-medium mb-2">Your API Key</p>
+                <p className="text-sm font-mono break-all select-all bg-background rounded-md p-2 border">
+                  {newKey}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Copy and save this key — you&apos;ll need it to log in and link your
-                Telegram account.
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Copy and save this key — you&apos;ll need it to log in and link
+                your Telegram account.
               </p>
               <Button className="w-full" onClick={() => router.push('/dashboard')}>
                 Go to Dashboard
@@ -108,10 +107,12 @@ export default function HomePage() {
                   value={inputKey}
                   onChange={(e) => {
                     setInputKey(e.target.value);
-                    setError('');
+                    if (error) setError('');
                   }}
                 />
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && (
+                  <p className="text-sm text-destructive">{error}</p>
+                )}
               </div>
               <Button type="submit" className="w-full">
                 Access Dashboard
@@ -120,8 +121,11 @@ export default function HomePage() {
                 Don&apos;t have an account?{' '}
                 <button
                   type="button"
-                  className="underline hover:text-foreground"
-                  onClick={() => { setMode('register'); setError(''); }}
+                  className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  onClick={() => {
+                    setMode('register');
+                    setError('');
+                  }}
                 >
                   Register
                 </button>
@@ -129,7 +133,9 @@ export default function HomePage() {
             </form>
           ) : (
             <div className="space-y-4">
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
               <Button
                 className="w-full"
                 onClick={handleRegister}
@@ -141,8 +147,11 @@ export default function HomePage() {
                 Already have an account?{' '}
                 <button
                   type="button"
-                  className="underline hover:text-foreground"
-                  onClick={() => { setMode('login'); setError(''); }}
+                  className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  onClick={() => {
+                    setMode('login');
+                    setError('');
+                  }}
                 >
                   Login
                 </button>
