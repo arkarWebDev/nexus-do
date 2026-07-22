@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { apiPost, ApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -206,6 +207,11 @@ export default function HomePage() {
           )}
         </CardContent>
       </Card>
+      <p className="absolute bottom-6 text-sm text-muted-foreground">
+        <Link href="/docs" className="hover:text-foreground transition-colors underline underline-offset-2">
+          Documentation
+        </Link>
+      </p>
     </main>
   );
 }
