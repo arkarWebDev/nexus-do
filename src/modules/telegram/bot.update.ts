@@ -1,9 +1,10 @@
 import { Inject } from '@nestjs/common';
-import { Update, Ctx, Start, Command } from 'nestjs-telegraf';
+import { Update, Ctx, Start, Command, Action } from 'nestjs-telegraf';
 import type { Context } from 'telegraf';
+import { Markup } from 'telegraf';
 import { eq, and } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
-import { users, tasks, todos } from '../../common/database/schema';
+import { users, tasks, todos, type Todo } from '../../common/database/schema';
 
 @Update()
 export class BotUpdate {
@@ -21,6 +22,20 @@ export class BotUpdate {
   private requireAuth(ctx: Context): number | null {
     if (!ctx.chat) return null;
     return ctx.chat.id;
+  }
+
+  private buildTodosKeyboard(records: Todo[]) {
+    const buttons = records.map((t) => {
+      const icon = t.isCompleted ? '✅' : '⬜️';
+      return [
+        Markup.button.callback(
+          `${icon} [${t.category}] ${t.action}`,
+          `toggle_todo_${t.id}`,
+        ),
+      ];
+    });
+
+    return Markup.inlineKeyboard(buttons);
   }
 
   @Start()
@@ -248,19 +263,79 @@ export class BotUpdate {
     const records = await this.db
       .select()
       .from(todos)
-      .where(and(eq(todos.userId, userId), eq(todos.isCompleted, false)))
-      .orderBy(todos.category, todos.createdAt);
+      .where(eq(todos.userId, userId))
+      .orderBy(todos.isCompleted, todos.category, todos.createdAt);
 
     if (records.length === 0) {
-      await ctx.reply('No pending todos.');
+      await ctx.reply('No todos yet. Create one with /addtodo');
       return;
     }
 
-    const list = records
-      .map((t) => `#${t.id}  [${t.category}]  ${t.action}`)
-      .join('\n');
+    const keyboard = this.buildTodosKeyboard(records);
 
-    await ctx.reply(`Your pending todos:\n\n${list}`);
+    await ctx.reply('Your todos (tap to toggle):', {
+      reply_markup: keyboard.reply_markup,
+    });
+  }
+
+  @Action(/^toggle_todo_(.+)$/)
+  async onToggleTodo(@Ctx() ctx: Context) {
+    const chatId = this.requireAuth(ctx);
+    if (!chatId) return;
+
+    const userId = await this.authenticatedUserId(chatId);
+    if (!userId) {
+      await ctx.answerCbQuery('Please link your account first.');
+      return;
+    }
+
+    const callbackData = ctx.callbackQuery && 'data' in ctx.callbackQuery
+      ? ctx.callbackQuery.data
+      : undefined;
+    if (!callbackData) return;
+    const todoId = parseInt(callbackData.split('_').pop()!, 10);
+
+    if (isNaN(todoId)) {
+      await ctx.answerCbQuery('Invalid todo.');
+      return;
+    }
+
+    const [todo] = await this.db
+      .select()
+      .from(todos)
+      .where(and(eq(todos.id, todoId), eq(todos.userId, userId)))
+      .limit(1);
+
+    if (!todo) {
+      await ctx.answerCbQuery('Todo not found.');
+      return;
+    }
+
+    await this.db
+      .update(todos)
+      .set({ isCompleted: !todo.isCompleted, updatedAt: new Date() })
+      .where(eq(todos.id, todoId));
+
+    await ctx.answerCbQuery(
+      todo.isCompleted ? 'Marked as pending ⬜️' : 'Marked as done ✅',
+    );
+
+    const records = await this.db
+      .select()
+      .from(todos)
+      .where(eq(todos.userId, userId))
+      .orderBy(todos.isCompleted, todos.category, todos.createdAt);
+
+    const keyboard = this.buildTodosKeyboard(records);
+
+    try {
+      await ctx.editMessageReplyMarkup(keyboard.reply_markup);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('message is not modified')) {
+        return;
+      }
+    }
   }
 
   @Command('donetodo')
