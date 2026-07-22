@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "key_issued_at" timestamp DEFAULT now() NOT NULL;

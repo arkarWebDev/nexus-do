@@ -21,7 +21,7 @@ import { ErrorBanner } from '@/components/error-banner';
 import { DashboardSkeleton } from '@/components/loading-skeleton';
 
 export default function DashboardPage() {
-  const { apiKey, clearApiKey, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   const {
@@ -43,13 +43,13 @@ export default function DashboardPage() {
   } = useDashboard();
 
   useEffect(() => {
-    if (!authLoading && !apiKey) router.replace('/');
-  }, [apiKey, authLoading, router]);
+    if (!authLoading && !isAuthenticated) router.replace('/');
+  }, [isAuthenticated, authLoading, router]);
 
-  if (authLoading || (!apiKey && authLoading)) return null;
+  if (authLoading || (!isAuthenticated && authLoading)) return null;
 
-  const handleLogout = () => {
-    clearApiKey();
+  const handleLogout = async () => {
+    await logout();
     router.push('/');
   };
 

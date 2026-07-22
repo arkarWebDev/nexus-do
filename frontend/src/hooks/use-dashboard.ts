@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/components/auth-provider';
 import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from '@/lib/api';
 import type { Task, Todo } from '@/types';
 
@@ -26,26 +25,22 @@ interface UseDashboardReturn {
 }
 
 export function useDashboard(): UseDashboardReturn {
-  const { apiKey } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
   const clearError = useCallback(() => setError(''), []);
 
   const fetchAll = useCallback(async () => {
-    if (!apiKey) return;
     try {
       setIsLoading(true);
       const [taskData, todoData] = await Promise.all([
-        apiGet<Task[]>('/tasks', apiKey),
-        apiGet<Todo[]>('/todos', apiKey),
+        apiGet<Task[]>('/tasks'),
+        apiGet<Todo[]>('/todos'),
       ]);
       setTasks(taskData);
       setTodos(todoData);
@@ -55,11 +50,9 @@ export function useDashboard(): UseDashboardReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [apiKey]);
+  }, []);
 
-  useEffect(() => {
-    if (apiKey) fetchAll();
-  }, [apiKey, fetchAll]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const wrapMutation = useCallback(
     async (fn: () => Promise<void>, fallback: string) => {
@@ -77,19 +70,19 @@ export function useDashboard(): UseDashboardReturn {
   const addTask = useCallback(
     async (action: string, remindAt: string) =>
       wrapMutation(
-        () => apiPost('/tasks', { action, remindAt }, apiKey),
+        () => apiPost('/tasks', { action, remindAt }),
         'Failed to create task',
       ),
-    [apiKey, wrapMutation],
+    [wrapMutation],
   );
 
   const addTodo = useCallback(
     async (action: string, category: string) =>
       wrapMutation(
-        () => apiPost('/todos', { action, category }, apiKey),
+        () => apiPost('/todos', { action, category }),
         'Failed to create todo',
       ),
-    [apiKey, wrapMutation],
+    [wrapMutation],
   );
 
   const toggleTask = useCallback(
@@ -99,11 +92,11 @@ export function useDashboard(): UseDashboardReturn {
         prev.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)),
       );
       await wrapMutation(
-        () => apiPatch(`/tasks/${id}/complete`, apiKey),
+        () => apiPatch(`/tasks/${id}/complete`),
         'Failed to toggle task',
       );
     },
-    [apiKey, wrapMutation, mounted],
+    [wrapMutation, mounted],
   );
 
   const toggleTodo = useCallback(
@@ -113,47 +106,35 @@ export function useDashboard(): UseDashboardReturn {
         prev.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)),
       );
       await wrapMutation(
-        () => apiPatch(`/todos/${id}/complete`, apiKey),
+        () => apiPatch(`/todos/${id}/complete`),
         'Failed to toggle todo',
       );
     },
-    [apiKey, wrapMutation, mounted],
+    [wrapMutation, mounted],
   );
 
   const deleteTask = useCallback(
     async (id: number) =>
-      wrapMutation(
-        () => apiDelete(`/tasks/${id}`, apiKey),
-        'Failed to delete task',
-      ),
-    [apiKey, wrapMutation],
+      wrapMutation(() => apiDelete(`/tasks/${id}`), 'Failed to delete task'),
+    [wrapMutation],
   );
 
   const deleteTodo = useCallback(
     async (id: number) =>
-      wrapMutation(
-        () => apiDelete(`/todos/${id}`, apiKey),
-        'Failed to delete todo',
-      ),
-    [apiKey, wrapMutation],
+      wrapMutation(() => apiDelete(`/todos/${id}`), 'Failed to delete todo'),
+    [wrapMutation],
   );
 
   const cleanupTasks = useCallback(
     async () =>
-      wrapMutation(
-        () => apiDelete('/tasks/cleanup', apiKey),
-        'Failed to clean up tasks',
-      ),
-    [apiKey, wrapMutation],
+      wrapMutation(() => apiDelete('/tasks/cleanup'), 'Failed to clean up tasks'),
+    [wrapMutation],
   );
 
   const cleanupTodos = useCallback(
     async () =>
-      wrapMutation(
-        () => apiDelete('/todos/cleanup', apiKey),
-        'Failed to clean up todos',
-      ),
-    [apiKey, wrapMutation],
+      wrapMutation(() => apiDelete('/todos/cleanup'), 'Failed to clean up todos'),
+    [wrapMutation],
   );
 
   const pendingTasks = tasks.filter((t) => !t.isCompleted);

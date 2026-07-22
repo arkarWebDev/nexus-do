@@ -17,19 +17,19 @@ import {
 import type { RegisterResponse } from '@/types';
 
 export default function HomePage() {
-  const { apiKey, setApiKey, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [inputKey, setInputKey] = useState('');
   const [error, setError] = useState('');
   const [newKey, setNewKey] = useState('');
-  const [registering, setRegistering] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && apiKey) router.replace('/dashboard');
-  }, [apiKey, isLoading, router]);
+    if (!isLoading && isAuthenticated) router.replace('/dashboard');
+  }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading || apiKey) {
+  if (isLoading || isAuthenticated) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
         <div className="h-6 w-6 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -37,28 +37,33 @@ export default function HomePage() {
     );
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputKey.trim();
     if (!trimmed) {
       setError('Please enter your API key.');
       return;
     }
-    setApiKey(trimmed);
-    router.push('/dashboard');
+    setSubmitting(true);
+    setError('');
+    try {
+      await login(trimmed);
+      router.push('/dashboard');
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Invalid API key.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleRegister = async () => {
-    setRegistering(true);
+    setSubmitting(true);
     setError('');
     try {
-      const data = await apiPost<RegisterResponse>(
-        '/users/register',
-        {},
-        null,
-      );
+      const data = await apiPost<RegisterResponse>('/users/register');
       setNewKey(data.apiKey);
-      setApiKey(data.apiKey);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -66,7 +71,7 @@ export default function HomePage() {
           : 'Registration failed. Is the backend running?',
       );
     } finally {
-      setRegistering(false);
+      setSubmitting(false);
     }
   };
 
@@ -147,8 +152,8 @@ export default function HomePage() {
                   <p className="text-sm text-destructive font-medium">{error}</p>
                 )}
               </div>
-              <Button type="submit" className="w-full" size="lg">
-                Sign In
+              <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                {submitting ? 'Signing in...' : 'Sign In'}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 New to NexusDo?{' '}
@@ -173,9 +178,9 @@ export default function HomePage() {
                 className="w-full"
                 size="lg"
                 onClick={handleRegister}
-                disabled={registering}
+                disabled={submitting}
               >
-                {registering ? (
+                {submitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     Creating account...

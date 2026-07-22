@@ -8,6 +8,13 @@
       "when": 1784733768535,
       "tag": "0000_cooing_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784740696077,
+      "tag": "0001_blue_smiling_tiger",
+      "breakpoints": true
     }
   ]
 }

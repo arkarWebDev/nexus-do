@@ -17,7 +17,7 @@ import {
 import type { UserProfile } from '@/types';
 
 export default function SettingsPage() {
-  const { apiKey, clearApiKey, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [copied, setCopied] = useState(false);
@@ -25,17 +25,16 @@ export default function SettingsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!authLoading && !apiKey) {
+    if (!authLoading && !isAuthenticated) {
       router.replace('/');
     }
-  }, [apiKey, authLoading, router]);
+  }, [isAuthenticated, authLoading, router]);
 
   useEffect(() => {
-    if (!apiKey) return;
-    apiGet<UserProfile>('/users/me', apiKey)
+    apiGet<UserProfile>('/users/me')
       .then(setProfile)
       .catch(() => setError('Failed to load profile'));
-  }, [apiKey]);
+  }, []);
 
   if (authLoading) return null;
 
@@ -50,8 +49,8 @@ export default function SettingsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleLogout = () => {
-    clearApiKey();
+  const handleLogout = async () => {
+    await logout();
     router.push('/');
   };
 

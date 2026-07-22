@@ -23,7 +23,7 @@ export class UsersService {
 
     const [user] = await this.db
       .insert(users)
-      .values({ apiKey })
+      .values({ apiKey, keyIssuedAt: new Date() })
       .returning({ id: users.id, apiKey: users.apiKey });
 
     return user;
