@@ -22,4 +22,7 @@ COPY drizzle ./drizzle
 
 EXPOSE 3001
 
-CMD sh -c "npx drizzle-kit migrate && node dist/main.js"
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
