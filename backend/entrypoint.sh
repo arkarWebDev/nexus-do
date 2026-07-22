@@ -1,14 +1,14 @@
 #!/bin/sh
 set -e
 
-echo "Waiting for database..."
-for i in $(seq 1 30); do
-  if npx drizzle-kit migrate 2>/dev/null; then
-    echo "Migration complete"
+echo "Syncing database schema..."
+for i in $(seq 1 15); do
+  if npx drizzle-kit push --accept-data-loss 2>&1; then
+    echo "Schema synced"
     break
   fi
-  echo "  attempt $i/30 — retrying in 2s..."
-  sleep 2
+  echo "  attempt $i/15 — retrying in 3s..."
+  sleep 3
 done
 
 echo "Starting server..."
