@@ -9,6 +9,17 @@ export class UsersService {
   constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
 
   async register() {
+    const apiKey = await this.generateUniqueKey();
+
+    const [user] = await this.db
+      .insert(users)
+      .values({ apiKey, keyIssuedAt: new Date() })
+      .returning({ id: users.id, apiKey: users.apiKey });
+
+    return user;
+  }
+
+  private async generateUniqueKey(): Promise<string> {
     let apiKey: string;
     let existing: unknown;
 
@@ -21,10 +32,21 @@ export class UsersService {
         .limit(1);
     } while (existing);
 
+    return apiKey;
+  }
+
+  async rotateKey(userId: number) {
+    const apiKey = await this.generateUniqueKey();
+
     const [user] = await this.db
-      .insert(users)
-      .values({ apiKey, keyIssuedAt: new Date() })
+      .update(users)
+      .set({ apiKey, keyIssuedAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, userId))
       .returning({ id: users.id, apiKey: users.apiKey });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     return user;
   }

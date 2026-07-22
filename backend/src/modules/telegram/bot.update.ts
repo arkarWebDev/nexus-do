@@ -3,6 +3,7 @@ import { Update, Ctx, Start, Command, Action } from 'nestjs-telegraf';
 import type { Context } from 'telegraf';
 import { Markup } from 'telegraf';
 import { eq, and } from 'drizzle-orm';
+import { randomBytes } from 'crypto';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
 import { users, tasks, todos, type Todo } from '../../common/database/schema';
 
@@ -99,7 +100,8 @@ export class BotUpdate {
         '/addtodo <action> #<category>\n' +
         '/todos — list all todos (tap to toggle)\n' +
         '/donetodo <id>\n' +
-        '/cleantodos — remove completed todos',
+        '/cleantodos — remove completed todos\n\n' +
+        '/rotatekey — generate a new API key',
     );
   }
 
@@ -427,5 +429,29 @@ export class BotUpdate {
       .returning({ id: todos.id });
 
     await ctx.reply(`Cleaned up ${deleted.length} completed todo(s).`);
+  }
+
+  @Command('rotatekey')
+  async onRotateKey(@Ctx() ctx: Context) {
+    const chatId = this.requireAuth(ctx);
+    if (!chatId) return;
+
+    const userId = await this.authenticatedUserId(chatId);
+    if (!userId) {
+      await ctx.reply('Please link your account first: /start <API_KEY>');
+      return;
+    }
+
+    const apiKey = randomBytes(32).toString('hex');
+
+    await this.db
+      .update(users)
+      .set({ apiKey, keyIssuedAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, userId));
+
+    await ctx.reply(
+      `Your API key has been rotated. Your new key:\n\n\`${apiKey}\`\n\nUse this to log in on the web or share it to link new devices. Save it somewhere safe.`,
+      { parse_mode: 'Markdown' },
+    );
   }
 }

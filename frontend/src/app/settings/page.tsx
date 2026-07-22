@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiPatch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [copied, setCopied] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [rotating, setRotating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -47,6 +48,26 @@ export default function SettingsPage() {
     await navigator.clipboard.writeText(profile.apiKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRotate = async () => {
+    setRotating(true);
+    setError('');
+    try {
+      const data = await apiPatch<{ id: number; apiKey: string }>(
+        '/users/rotate-key',
+      );
+      setProfile((prev) =>
+        prev ? { ...prev, apiKey: data.apiKey } : null,
+      );
+      setShowKey(true);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to rotate key',
+      );
+    } finally {
+      setRotating(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -185,6 +206,20 @@ export default function SettingsPage() {
                     <code className="block mt-2 text-sm font-mono bg-background rounded-md p-2 border break-all select-all">
                       /start {showKey ? profile.apiKey : maskedKey}
                     </code>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Key expires 90 days after issue.
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                      onClick={handleRotate}
+                      disabled={rotating}
+                    >
+                      {rotating ? 'Rotating...' : 'Rotate Key'}
+                    </Button>
                   </div>
                 </div>
               )}

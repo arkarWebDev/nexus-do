@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Res,
   HttpCode,
   HttpStatus,
@@ -38,5 +39,25 @@ export class UsersController {
   async me(@Req() req: Request) {
     const user = req['user'] as User;
     return this.usersService.findById(user.id);
+  }
+
+  @Patch('rotate-key')
+  @UseGuards(AuthGuard)
+  async rotateKey(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const user = req['user'] as User;
+    const updated = await this.usersService.rotateKey(user.id);
+
+    res.cookie('nexusdo_session', updated.apiKey, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      path: '/',
+      maxAge: 90 * 24 * 60 * 60 * 1000,
+    });
+
+    return updated;
   }
 }
