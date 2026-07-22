@@ -4,9 +4,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+ARG NEXT_PUBLIC_API_URL=/api
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 COPY . .
 
-ENV NEXT_PUBLIC_API_URL=/api
 RUN npm run build
 
 FROM node:22-alpine AS production
@@ -17,6 +19,7 @@ COPY --from=build /app/.next/static ./.next/static
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
+ENV NEXT_PUBLIC_API_URL=/api
 EXPOSE 3000
 
 CMD ["node", "server.js"]
