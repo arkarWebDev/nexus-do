@@ -18,7 +18,14 @@ export interface Todo {
   updatedAt: string;
 }
 
+export interface UserProfile {
+  id: number;
+  apiKey: string;
+  telegramChatId: string | null;
+}
+
 export interface RegisterResponse {
   id: number;
   apiKey: string;
 }
+

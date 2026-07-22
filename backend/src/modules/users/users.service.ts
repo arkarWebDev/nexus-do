@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
@@ -25,6 +25,24 @@ export class UsersService {
       .insert(users)
       .values({ apiKey })
       .returning({ id: users.id, apiKey: users.apiKey });
+
+    return user;
+  }
+
+  async findById(id: number) {
+    const [user] = await this.db
+      .select({
+        id: users.id,
+        apiKey: users.apiKey,
+        telegramChatId: users.telegramChatId,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     return user;
   }
