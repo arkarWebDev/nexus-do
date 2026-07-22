@@ -204,22 +204,30 @@ export class BotUpdate {
 
     if (!args) {
       await ctx.reply(
-        'Usage: /addtodo <category> <action>\nExample: /addtodo Work Review quarterly report',
+        'Usage: /addtodo <action> #<category>\nExample: /addtodo Review the PR #Work',
       );
       return;
     }
 
-    const match = args.match(/^(\S+)\s+(.+)$/s);
+    const hashtagMatch = args.match(/#(\S+)\s*$/);
 
-    if (!match) {
+    let action: string;
+    let category: string;
+
+    if (hashtagMatch) {
+      category = hashtagMatch[1];
+      action = args.slice(0, hashtagMatch.index).trim();
+    } else {
+      category = 'General';
+      action = args;
+    }
+
+    if (!action) {
       await ctx.reply(
-        'Usage: /addtodo <category> <action>\nExample: /addtodo Work Review quarterly report',
+        'Usage: /addtodo <action> #<category>\nExample: /addtodo Review the PR #Work',
       );
       return;
     }
-
-    const category = match[1];
-    const action = match[2];
 
     await this.db.insert(todos).values({ userId, category, action });
 
