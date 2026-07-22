@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = useCallback(async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/users/me`,
+        `${process.env.NEXT_PUBLIC_API_URL ?? '/api'}/users/me`,
         { credentials: 'include' },
       );
       setIsAuthenticated(res.ok);
