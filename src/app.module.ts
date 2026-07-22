@@ -1,17 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { TodosModule } from './modules/todos/todos.module';
 import { TelegramModule } from './modules/telegram/telegram.module';
+import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     TelegrafModule.forRoot({
       token: process.env.TELEGRAM_BOT_TOKEN!,
     }),
@@ -20,6 +23,7 @@ import { AppService } from './app.service';
     TasksModule,
     TodosModule,
     TelegramModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

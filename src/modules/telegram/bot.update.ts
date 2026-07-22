@@ -25,13 +25,20 @@ export class BotUpdate {
   }
 
   private buildTodosKeyboard(records: Todo[]) {
-    const buttons = records.map((t) => {
+    const labels = records.map((t) => {
       const icon = t.isCompleted ? '✅' : '⬜️';
+      return `${icon} [${t.category}] ${t.action}`;
+    });
+
+    const maxLen = Math.max(...labels.map((l) => [...l].length));
+
+    const buttons = records.map((t, i) => {
+      const padded = labels[i].padEnd(
+        labels[i].length + (maxLen - [...labels[i]].length),
+        ' ',
+      );
       return [
-        Markup.button.callback(
-          `${icon} [${t.category}] ${t.action}`,
-          `toggle_todo_${t.id}`,
-        ),
+        Markup.button.callback(padded, `toggle_todo_${t.id}`),
       ];
     });
 
