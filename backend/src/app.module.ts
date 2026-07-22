@@ -6,6 +6,7 @@ import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { TodosModule } from './modules/todos/todos.module';
+import { UsersModule } from './modules/users/users.module';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { AppController } from './app.controller';
@@ -22,6 +23,7 @@ import { AppService } from './app.service';
     AuthModule,
     TasksModule,
     TodosModule,
+    UsersModule,
     TelegramModule,
     SchedulerModule,
   ],
