@@ -19,6 +19,8 @@ RUN npm ci --omit=dev && npm install drizzle-kit pg
 
 COPY drizzle.config.ts ./
 COPY drizzle ./drizzle
+RUN mkdir -p src/common/database
+COPY --from=build /app/src/common/database/schema.ts ./src/common/database/schema.ts
 
 EXPOSE 3001
 

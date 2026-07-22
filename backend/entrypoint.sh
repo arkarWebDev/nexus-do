@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-echo "Syncing database schema..."
+echo "Running database migrations..."
 for i in $(seq 1 15); do
-  if npx drizzle-kit push 2>&1; then
-    echo "Schema synced"
+  if npx drizzle-kit migrate 2>&1; then
+    echo "Migrations complete"
     break
   fi
   echo "  attempt $i/15 — retrying in 3s..."
