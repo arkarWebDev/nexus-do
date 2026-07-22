@@ -54,9 +54,16 @@ export class BotUpdate {
 
     if (parts.length < 2) {
       await ctx.reply(
-        'Welcome to NexusDo! Please link your account by providing your API key:\n\n/start <API_KEY>',
+        'Welcome to NexusDo! Please link your account by providing your API key:\n\n' +
+          '/start <API_KEY>',
       );
       return;
+    }
+
+    try {
+      await ctx.deleteMessage();
+    } catch {
+      // ignore if bot cannot delete messages in this chat
     }
 
     const apiKey = parts[1];
@@ -69,7 +76,8 @@ export class BotUpdate {
 
     if (!user) {
       await ctx.reply(
-        'Invalid API key. Please check your key and try again:\n\n/start <API_KEY>',
+        'Invalid API key. Please check your key and try again:\n\n' +
+          '/start <API_KEY>',
       );
       return;
     }
