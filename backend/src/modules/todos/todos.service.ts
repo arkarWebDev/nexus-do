@@ -55,4 +55,13 @@ export class TodosService {
 
     return todo;
   }
+
+  async cleanupCompleted(userId: number) {
+    const deleted = await this.db
+      .delete(todos)
+      .where(and(eq(todos.userId, userId), eq(todos.isCompleted, true)))
+      .returning();
+
+    return { deleted: deleted.length };
+  }
 }

@@ -86,10 +86,12 @@ export class BotUpdate {
       'Your Telegram account has been successfully linked! You can now use:\n\n' +
         '/addtask <YYYY-MM-DD HH:mm> <action>\n' +
         '/tasks — list pending tasks\n' +
-        '/donetask <id>\n\n' +
-        '/addtodo <category> <action>\n' +
-        '/todos — list pending todos\n' +
-        '/donetodo <id>',
+        '/donetask <id>\n' +
+        '/cleantasks — remove completed tasks\n\n' +
+        '/addtodo <action> #<category>\n' +
+        '/todos — list all todos (tap to toggle)\n' +
+        '/donetodo <id>\n' +
+        '/cleantodos — remove completed todos',
     );
   }
 
@@ -208,6 +210,25 @@ export class BotUpdate {
     }
 
     await ctx.reply(`Task #${task.id} marked as completed: "${task.action}"`);
+  }
+
+  @Command('cleantasks')
+  async onCleanTasks(@Ctx() ctx: Context) {
+    const chatId = this.requireAuth(ctx);
+    if (!chatId) return;
+
+    const userId = await this.authenticatedUserId(chatId);
+    if (!userId) {
+      await ctx.reply('Please link your account first: /start <API_KEY>');
+      return;
+    }
+
+    const deleted = await this.db
+      .delete(tasks)
+      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)))
+      .returning({ id: tasks.id });
+
+    await ctx.reply(`Cleaned up ${deleted.length} completed task(s).`);
   }
 
   @Command('addtodo')
@@ -379,5 +400,24 @@ export class BotUpdate {
     await ctx.reply(
       `Todo #${todo.id} marked as completed: [${todo.category}] "${todo.action}"`,
     );
+  }
+
+  @Command('cleantodos')
+  async onCleanTodos(@Ctx() ctx: Context) {
+    const chatId = this.requireAuth(ctx);
+    if (!chatId) return;
+
+    const userId = await this.authenticatedUserId(chatId);
+    if (!userId) {
+      await ctx.reply('Please link your account first: /start <API_KEY>');
+      return;
+    }
+
+    const deleted = await this.db
+      .delete(todos)
+      .where(and(eq(todos.userId, userId), eq(todos.isCompleted, true)))
+      .returning({ id: todos.id });
+
+    await ctx.reply(`Cleaned up ${deleted.length} completed todo(s).`);
   }
 }

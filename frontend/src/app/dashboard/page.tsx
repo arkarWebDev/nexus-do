@@ -37,6 +37,8 @@ export default function DashboardPage() {
     toggleTodo,
     deleteTask,
     deleteTodo,
+    cleanupTasks,
+    cleanupTodos,
   } = useDashboard();
 
   useEffect(() => {
@@ -131,8 +133,18 @@ export default function DashboardPage() {
                     )}
                   </div>
                 )}
-                <div className="px-4 py-2 border-t">
+                <div className="px-4 py-2 border-t flex items-center justify-between">
                   <TaskFormDialog onAdd={addTask} />
+                  {completedTasks.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                      onClick={cleanupTasks}
+                    >
+                      Clear {completedTasks.length} done
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -178,8 +190,18 @@ export default function DashboardPage() {
                     )}
                   </div>
                 )}
-                <div className="px-4 py-2 border-t">
+                <div className="px-4 py-2 border-t flex items-center justify-between">
                   <TodoFormDialog onAdd={addTodo} />
+                  {completedTodos.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                      onClick={cleanupTodos}
+                    >
+                      Clear {completedTodos.length} done
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

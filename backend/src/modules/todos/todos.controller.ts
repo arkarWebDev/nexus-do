@@ -44,4 +44,10 @@ export class TodosController {
     const user = req['user'] as User;
     return this.todosService.remove(id, user.id);
   }
+
+  @Delete('cleanup')
+  cleanupCompleted(@Req() req: Request) {
+    const user = req['user'] as User;
+    return this.todosService.cleanupCompleted(user.id);
+  }
 }

@@ -55,4 +55,13 @@ export class TasksService {
 
     return task;
   }
+
+  async cleanupCompleted(userId: number) {
+    const deleted = await this.db
+      .delete(tasks)
+      .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)))
+      .returning();
+
+    return { deleted: deleted.length };
+  }
 }

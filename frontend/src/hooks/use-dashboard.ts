@@ -21,6 +21,8 @@ interface UseDashboardReturn {
   toggleTodo: (id: number) => Promise<void>;
   deleteTask: (id: number) => Promise<void>;
   deleteTodo: (id: number) => Promise<void>;
+  cleanupTasks: () => Promise<void>;
+  cleanupTodos: () => Promise<void>;
 }
 
 export function useDashboard(): UseDashboardReturn {
@@ -136,6 +138,24 @@ export function useDashboard(): UseDashboardReturn {
     [apiKey, wrapMutation],
   );
 
+  const cleanupTasks = useCallback(
+    async () =>
+      wrapMutation(
+        () => apiDelete('/tasks/cleanup', apiKey),
+        'Failed to clean up tasks',
+      ),
+    [apiKey, wrapMutation],
+  );
+
+  const cleanupTodos = useCallback(
+    async () =>
+      wrapMutation(
+        () => apiDelete('/todos/cleanup', apiKey),
+        'Failed to clean up todos',
+      ),
+    [apiKey, wrapMutation],
+  );
+
   const pendingTasks = tasks.filter((t) => !t.isCompleted);
   const completedTasks = tasks.filter((t) => t.isCompleted);
   const pendingTodos = todos.filter((t) => !t.isCompleted);
@@ -157,5 +177,7 @@ export function useDashboard(): UseDashboardReturn {
     toggleTodo,
     deleteTask,
     deleteTodo,
+    cleanupTasks,
+    cleanupTodos,
   };
 }

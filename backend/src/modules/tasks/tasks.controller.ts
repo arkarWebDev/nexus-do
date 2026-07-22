@@ -44,4 +44,10 @@ export class TasksController {
     const user = req['user'] as User;
     return this.tasksService.remove(id, user.id);
   }
+
+  @Delete('cleanup')
+  cleanupCompleted(@Req() req: Request) {
+    const user = req['user'] as User;
+    return this.tasksService.cleanupCompleted(user.id);
+  }
 }
