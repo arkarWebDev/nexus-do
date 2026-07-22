@@ -12,20 +12,28 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+const conditionalImports = botToken
+  ? [
+      TelegrafModule.forRoot({ token: botToken }),
+      ScheduleModule.forRoot(),
+      TelegramModule,
+      SchedulerModule,
+    ]
+  : [
+      ScheduleModule.forRoot(),
+    ];
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ScheduleModule.forRoot(),
-    TelegrafModule.forRoot({
-      token: process.env.TELEGRAM_BOT_TOKEN!,
-    }),
+    ...conditionalImports,
     DatabaseModule,
     AuthModule,
     TasksModule,
     TodosModule,
     UsersModule,
-    TelegramModule,
-    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
