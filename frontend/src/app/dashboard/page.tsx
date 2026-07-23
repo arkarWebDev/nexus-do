@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
@@ -19,6 +19,9 @@ import { TaskItem } from '@/components/dashboard/task-item';
 import { TodoItem } from '@/components/dashboard/todo-item';
 import { ErrorBanner } from '@/components/error-banner';
 import { DashboardSkeleton } from '@/components/loading-skeleton';
+import { EditTaskDialog } from '@/components/dashboard/edit-task-dialog';
+import { EditTodoDialog } from '@/components/dashboard/edit-todo-dialog';
+import type { Task, Todo } from '@/types';
 
 export default function DashboardPage() {
   const { isAuthenticated, logout, isLoading: authLoading } = useAuth();
@@ -40,7 +43,12 @@ export default function DashboardPage() {
     deleteTodo,
     cleanupTasks,
     cleanupTodos,
+    updateTask,
+    updateTodo,
   } = useDashboard();
+
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.replace('/');
@@ -140,6 +148,7 @@ export default function DashboardPage() {
                             task={task}
                             onToggle={toggleTask}
                             onDelete={deleteTask}
+                            onEdit={setEditingTask}
                           />
                         ))}
                       </div>
@@ -152,6 +161,7 @@ export default function DashboardPage() {
                             task={task}
                             onToggle={toggleTask}
                             onDelete={deleteTask}
+                            onEdit={setEditingTask}
                           />
                         ))}
                       </div>
@@ -197,6 +207,7 @@ export default function DashboardPage() {
                             todo={todo}
                             onToggle={toggleTodo}
                             onDelete={deleteTodo}
+                            onEdit={setEditingTodo}
                           />
                         ))}
                       </div>
@@ -209,6 +220,7 @@ export default function DashboardPage() {
                             todo={todo}
                             onToggle={toggleTodo}
                             onDelete={deleteTodo}
+                            onEdit={setEditingTodo}
                           />
                         ))}
                       </div>
@@ -233,6 +245,25 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {editingTask && (
+        <EditTaskDialog
+          id={editingTask.id}
+          action={editingTask.action}
+          remindAt={editingTask.remindAt}
+          onSave={updateTask}
+          onClose={() => setEditingTask(null)}
+        />
+      )}
+      {editingTodo && (
+        <EditTodoDialog
+          id={editingTodo.id}
+          action={editingTodo.action}
+          category={editingTodo.category}
+          onSave={updateTodo}
+          onClose={() => setEditingTodo(null)}
+        />
+      )}
     </div>
   );
 }

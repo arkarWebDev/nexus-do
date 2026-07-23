@@ -3,6 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
 import { tasks } from '../../common/database/schema';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 import { EventsService } from '../../common/events/events.service';
 
 @Injectable()
@@ -34,16 +35,39 @@ export class TasksService {
       .orderBy(tasks.remindAt);
   }
 
-  async markComplete(id: number, userId: number) {
+  async update(id: number, userId: number, dto: UpdateTaskDto) {
     const [task] = await this.db
       .update(tasks)
-      .set({ isCompleted: true, updatedAt: new Date() })
+      .set({
+        ...(dto.action !== undefined ? { action: dto.action } : {}),
+        ...(dto.remindAt !== undefined ? { remindAt: new Date(dto.remindAt) } : {}),
+        updatedAt: new Date(),
+      })
       .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
       .returning();
 
-    if (!task) {
+    if (!task) throw new NotFoundException('Task not found');
+
+    this.events.emit({ type: 'tasks', userId });
+    return task;
+  }
+
+  async markComplete(id: number, userId: number) {
+    const [existing] = await this.db
+      .select({ isCompleted: tasks.isCompleted })
+      .from(tasks)
+      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+      .limit(1);
+
+    if (!existing) {
       throw new NotFoundException('Task not found');
     }
+
+    const [task] = await this.db
+      .update(tasks)
+      .set({ isCompleted: !existing.isCompleted, updatedAt: new Date() })
+      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+      .returning();
 
     this.events.emit({ type: 'tasks', userId });
     return task;

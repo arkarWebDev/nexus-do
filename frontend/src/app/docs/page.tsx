@@ -107,6 +107,11 @@ export default function DocsPage() {
               <td><code>/addtask 2026-08-01 14:30 Buy groceries</code></td>
             </tr>
             <tr>
+              <td><code>/edittask &lt;id&gt; &lt;date&gt; &lt;time&gt; &lt;action&gt;</code></td>
+              <td>Edit an existing task</td>
+              <td><code>/edittask 3 2026-08-01 15:00 Updated groceries</code></td>
+            </tr>
+            <tr>
               <td><code>/tasks</code></td>
               <td>List all pending tasks with IDs</td>
               <td><code>/tasks</code></td>
@@ -125,6 +130,11 @@ export default function DocsPage() {
               <td><code>/addtodo &lt;action&gt; #&lt;category&gt;</code></td>
               <td>Create a todo with a category</td>
               <td><code>/addtodo Review the PR #Work</code></td>
+            </tr>
+            <tr>
+              <td><code>/edittodo &lt;id&gt; &lt;action&gt; #&lt;category&gt;</code></td>
+              <td>Edit an existing todo</td>
+              <td><code>/edittodo 2 Updated action #Work</code></td>
             </tr>
             <tr>
               <td><code>/todos</code></td>

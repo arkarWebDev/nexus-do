@@ -13,6 +13,7 @@ import {
 import type { Request } from 'express';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import type { User } from '../../common/database/schema';
 
@@ -31,6 +32,16 @@ export class TasksController {
   findAll(@Req() req: Request) {
     const user = req['user'] as User;
     return this.tasksService.findAll(user.id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Body() dto: UpdateTaskDto,
+  ) {
+    const user = req['user'] as User;
+    return this.tasksService.update(id, user.id, dto);
   }
 
   @Patch(':id/complete')

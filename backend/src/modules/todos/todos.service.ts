@@ -3,6 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
 import { todos } from '../../common/database/schema';
 import { CreateTodoDto } from './dto/create-todo.dto';
+import { UpdateTodoDto } from './dto/update-todo.dto';
 import { EventsService } from '../../common/events/events.service';
 
 @Injectable()
@@ -34,16 +35,39 @@ export class TodosService {
       .orderBy(todos.category, todos.createdAt);
   }
 
-  async markComplete(id: number, userId: number) {
+  async update(id: number, userId: number, dto: UpdateTodoDto) {
     const [todo] = await this.db
       .update(todos)
-      .set({ isCompleted: true, updatedAt: new Date() })
+      .set({
+        ...(dto.action !== undefined ? { action: dto.action } : {}),
+        ...(dto.category !== undefined ? { category: dto.category } : {}),
+        updatedAt: new Date(),
+      })
       .where(and(eq(todos.id, id), eq(todos.userId, userId)))
       .returning();
 
-    if (!todo) {
+    if (!todo) throw new NotFoundException('Todo not found');
+
+    this.events.emit({ type: 'todos', userId });
+    return todo;
+  }
+
+  async markComplete(id: number, userId: number) {
+    const [existing] = await this.db
+      .select({ isCompleted: todos.isCompleted })
+      .from(todos)
+      .where(and(eq(todos.id, id), eq(todos.userId, userId)))
+      .limit(1);
+
+    if (!existing) {
       throw new NotFoundException('Todo not found');
     }
+
+    const [todo] = await this.db
+      .update(todos)
+      .set({ isCompleted: !existing.isCompleted, updatedAt: new Date() })
+      .where(and(eq(todos.id, id), eq(todos.userId, userId)))
+      .returning();
 
     this.events.emit({ type: 'todos', userId });
     return todo;

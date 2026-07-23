@@ -13,6 +13,7 @@ import {
 import type { Request } from 'express';
 import { TodosService } from './todos.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
+import { UpdateTodoDto } from './dto/update-todo.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import type { User } from '../../common/database/schema';
 
@@ -31,6 +32,16 @@ export class TodosController {
   findAll(@Req() req: Request) {
     const user = req['user'] as User;
     return this.todosService.findAll(user.id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Body() dto: UpdateTodoDto,
+  ) {
+    const user = req['user'] as User;
+    return this.todosService.update(id, user.id, dto);
   }
 
   @Patch(':id/complete')

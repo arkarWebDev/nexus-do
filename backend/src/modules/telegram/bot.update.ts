@@ -136,10 +136,12 @@ export class BotUpdate {
     await ctx.reply(
       `Linked! Timezone set to UTC${tzStr}. Commands:\n\n` +
         '/addtask <YYYY-MM-DD HH:mm> <action>\n' +
+        '/edittask <id> <YYYY-MM-DD HH:mm> <new action>\n' +
         '/tasks — list pending tasks\n' +
         '/donetask <id>\n' +
         '/cleantasks — remove completed tasks\n\n' +
         '/addtodo <action> #<category>\n' +
+        '/edittodo <id> <new action> #<new category>\n' +
         '/todos — list all todos (tap to toggle)\n' +
         '/donetodo <id>\n' +
         '/cleantodos — remove completed todos\n\n' +
@@ -197,6 +199,57 @@ export class BotUpdate {
     await ctx.reply(
       `Task created: "${action}"\nReminder set for ${match[1]} at ${match[2]}`,
     );
+  }
+
+  @Command('edittask')
+  async onEditTask(@Ctx() ctx: Context) {
+    const chatId = this.requireAuth(ctx);
+    if (!chatId) return;
+
+    const userId = await this.authenticatedUserId(chatId);
+    if (!userId) {
+      await ctx.reply('Please link your account first: /start <API_KEY> <UTC_OFFSET>');
+      return;
+    }
+
+    const text = (ctx.message as { text?: string })?.text ?? '';
+    const args = text.replace(/^\/\S+(@\S+)?\s*/, '').trim();
+
+    if (!args) {
+      await ctx.reply('Usage: /edittask <id> <YYYY-MM-DD HH:mm> <new action>\nExample: /edittask 3 2026-08-01 14:30 Updated task');
+      return;
+    }
+
+    const match = args.match(/^(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+(.+)$/s);
+    if (!match) {
+      await ctx.reply('Invalid format.\nUsage: /edittask <id> <YYYY-MM-DD HH:mm> <new action>');
+      return;
+    }
+
+    const id = parseInt(match[1], 10);
+    const dateStr = `${match[2]}T${match[3]}:00`;
+    const tz = await this.getUserTz(userId);
+    const remindAt = this.localToUtc(dateStr, tz);
+    const action = match[4];
+
+    if (isNaN(remindAt.getTime())) {
+      await ctx.reply('Invalid date/time.');
+      return;
+    }
+
+    const [task] = await this.db
+      .update(tasks)
+      .set({ action, remindAt, updatedAt: new Date() })
+      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+      .returning({ id: tasks.id, action: tasks.action });
+
+    if (!task) {
+      await ctx.reply(`Task #${id} not found or does not belong to you.`);
+      return;
+    }
+
+    this.events.emit({ type: 'tasks', userId });
+    await ctx.reply(`Task #${task.id} updated: "${task.action}"`);
   }
 
   @Command('tasks')
@@ -334,6 +387,50 @@ export class BotUpdate {
     this.events.emit({ type: 'todos', userId });
 
     await ctx.reply(`Todo created: [${category}] "${action}"`);
+  }
+
+  @Command('edittodo')
+  async onEditTodo(@Ctx() ctx: Context) {
+    const chatId = this.requireAuth(ctx);
+    if (!chatId) return;
+
+    const userId = await this.authenticatedUserId(chatId);
+    if (!userId) {
+      await ctx.reply('Please link your account first: /start <API_KEY> <UTC_OFFSET>');
+      return;
+    }
+
+    const text = (ctx.message as { text?: string })?.text ?? '';
+    const args = text.replace(/^\/\S+(@\S+)?\s*/, '').trim();
+
+    if (!args) {
+      await ctx.reply('Usage: /edittodo <id> <new action> #<new category>\nExample: /edittodo 2 Updated action #Work');
+      return;
+    }
+
+    const match = args.match(/^(\d+)\s+(.+?)\s*#(\S+)\s*$/s);
+    if (!match) {
+      await ctx.reply('Invalid format.\nUsage: /edittodo <id> <new action> #<new category>');
+      return;
+    }
+
+    const id = parseInt(match[1], 10);
+    const action = match[2].trim();
+    const category = match[3];
+
+    const [todo] = await this.db
+      .update(todos)
+      .set({ action, category, updatedAt: new Date() })
+      .where(and(eq(todos.id, id), eq(todos.userId, userId)))
+      .returning({ id: todos.id, action: todos.action, category: todos.category });
+
+    if (!todo) {
+      await ctx.reply(`Todo #${id} not found or does not belong to you.`);
+      return;
+    }
+
+    this.events.emit({ type: 'todos', userId });
+    await ctx.reply(`Todo #${todo.id} updated: [${todo.category}] "${todo.action}"`);
   }
 
   @Command('todos')
