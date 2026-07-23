@@ -13,6 +13,7 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   apiKey: varchar('api_key', { length: 64 }).notNull().unique(),
   telegramChatId: varchar('telegram_chat_id', { length: 64 }),
+  timezoneOffset: integer('timezone_offset').default(0),
   keyIssuedAt: timestamp('key_issued_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

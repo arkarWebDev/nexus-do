@@ -76,12 +76,13 @@ export default function DocsPage() {
         <h3>Linking Your Account</h3>
         <ol>
           <li>Find the bot on Telegram: <strong>@NexusDoBot</strong></li>
-          <li>Send <code>/start YOUR_API_KEY</code></li>
+          <li>Send <code>/start YOUR_API_KEY YOUR_UTC_OFFSET</code></li>
+          <li>Example: <code>/start a1b2c3f4... +0630</code> (for Myanmar, UTC+6:30)</li>
           <li>The bot will confirm the link. Your Telegram account is now connected.</li>
         </ol>
 
         <div className="note">
-          Your API key is available on the <strong>Settings</strong> page in the web dashboard. You need to copy it exactly — it&apos;s a long hexadecimal string.
+          The <strong>UTC offset</strong> is required so the bot knows your local timezone for reminders. Common offsets: <code>+0630</code> (Myanmar), <code>+0530</code> (India), <code>+0800</code> (Singapore/China), <code>-0500</code> (US Eastern), <code>0</code> or <code>+0000</code> (UTC). Your API key is available on the <strong>Settings</strong> page in the web dashboard.
         </div>
 
         <h3>Commands</h3>
@@ -96,9 +97,9 @@ export default function DocsPage() {
           </thead>
           <tbody>
             <tr>
-              <td><code>/start &lt;key&gt;</code></td>
-              <td>Link your account using your API key</td>
-              <td><code>/start a1b2c3...</code></td>
+              <td><code>/start &lt;key&gt; &lt;offset&gt;</code></td>
+              <td>Link your account and set your timezone</td>
+              <td><code>/start a1b2c3... +0630</code></td>
             </tr>
             <tr>
               <td><code>/addtask &lt;date&gt; &lt;time&gt; &lt;action&gt;</code></td>

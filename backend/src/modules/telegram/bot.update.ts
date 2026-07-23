@@ -8,6 +8,15 @@ import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider
 import { users, tasks, todos, type Todo } from '../../common/database/schema';
 import { EventsService } from '../../common/events/events.service';
 
+function parseOffset(raw: string): number {
+  const match = raw.match(/^([+-]?)(\d{1,2}):?(\d{2})$/);
+  if (!match) return NaN;
+  const sign = match[1] === '-' ? -1 : 1;
+  const hours = parseInt(match[2], 10);
+  const minutes = parseInt(match[3], 10);
+  return sign * (hours * 60 + minutes);
+}
+
 @Update()
 export class BotUpdate {
   constructor(
@@ -22,6 +31,21 @@ export class BotUpdate {
       .where(eq(users.telegramChatId, String(chatId)))
       .limit(1);
     return user?.id ?? null;
+  }
+
+  private async getUserTz(userId: number): Promise<number> {
+    const [user] = await this.db
+      .select({ tz: users.timezoneOffset })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return user?.tz ?? 0;
+  }
+
+  private localToUtc(dateStr: string, offsetMinutes: number): Date {
+    const local = new Date(dateStr);
+    if (isNaN(local.getTime())) return local;
+    return new Date(local.getTime() - offsetMinutes * 60_000);
   }
 
   private requireAuth(ctx: Context): number | null {
@@ -59,8 +83,12 @@ export class BotUpdate {
 
     if (parts.length < 2) {
       await ctx.reply(
-        'Welcome to NexusDo! Please link your account by providing your API key:\n\n' +
-          '/start <API_KEY>',
+        'Welcome to NexusDo! Please link your account:\n\n' +
+          '/start <API_KEY> <UTC_OFFSET>\n\n' +
+          'Examples:\n' +
+          '/start a1b2c3... +0630  (Myanmar / UTC+6:30)\n' +
+          '/start a1b2c3... -0500  (US Eastern / UTC-5)\n\n' +
+          'The offset is your timezone relative to UTC.',
       );
       return;
     }
@@ -72,6 +100,15 @@ export class BotUpdate {
     }
 
     const apiKey = parts[1];
+    const tzStr = parts[2] ?? '0';
+    const timezoneOffset = parseOffset(tzStr);
+
+    if (isNaN(timezoneOffset)) {
+      await ctx.reply(
+        'Invalid UTC offset. Use format +HHMM or -HHMM (e.g. +0630, -0500, 0).',
+      );
+      return;
+    }
 
     const [user] = await this.db
       .select()
@@ -91,12 +128,13 @@ export class BotUpdate {
       .update(users)
       .set({
         telegramChatId: String(ctx.chat.id),
+        timezoneOffset,
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id));
 
     await ctx.reply(
-      'Your Telegram account has been successfully linked! You can now use:\n\n' +
+      `Linked! Timezone set to UTC${tzStr}. Commands:\n\n` +
         '/addtask <YYYY-MM-DD HH:mm> <action>\n' +
         '/tasks — list pending tasks\n' +
         '/donetask <id>\n' +
@@ -140,7 +178,8 @@ export class BotUpdate {
     }
 
     const dateStr = `${match[1]}T${match[2]}:00`;
-    const remindAt = new Date(dateStr);
+    const tz = await this.getUserTz(userId);
+    const remindAt = this.localToUtc(dateStr, tz);
 
     if (isNaN(remindAt.getTime())) {
       await ctx.reply(
@@ -333,6 +372,7 @@ export class BotUpdate {
 
     const userId = await this.authenticatedUserId(chatId);
     if (!userId) {
+
       await ctx.answerCbQuery('Please link your account first.');
       return;
     }
