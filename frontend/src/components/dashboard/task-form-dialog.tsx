@@ -30,7 +30,8 @@ export function TaskFormDialog({ onAdd }: TaskFormDialogProps) {
     if (!action.trim() || !date || !time) return;
     setSubmitting(true);
     try {
-      await onAdd(action.trim(), `${date}T${time}:00`);
+      const localDate = new Date(`${date}T${time}:00`);
+      await onAdd(action.trim(), localDate.toISOString());
       setAction('');
       setDate('');
       setTime('');
