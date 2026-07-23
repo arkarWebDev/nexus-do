@@ -44,18 +44,21 @@ export default function DocsPage() {
         <h2>Web Dashboard</h2>
 
         <h3>Tasks</h3>
-        <p>Tasks have a <strong>reminder date and time</strong>. You create them with an action and when they should remind you.</p>
+        <p>Tasks have a <strong>reminder date and time</strong>. You can also make them <strong>recurring</strong> (daily, weekly, or weekdays).</p>
         <ul>
-          <li><strong>Add a task</strong> — enter the action and pick a date/time, then click Create</li>
-          <li><strong>Complete a task</strong> — click the checkbox next to it</li>
+          <li><strong>Add a task</strong> — enter the action, pick a date/time (or leave blank for recurring), and optionally set recurrence</li>
+          <li><strong>Edit a task</strong> — hover and click the pencil icon to change the action, date, or recurrence</li>
+          <li><strong>Complete / uncomplete</strong> — click the checkbox to toggle</li>
           <li><strong>Delete a task</strong> — click the trash icon</li>
           <li><strong>Clean up</strong> — removes all completed tasks at once</li>
+          <li><strong>Search</strong> — use the search bar at the top to filter tasks and todos by keyword</li>
         </ul>
 
         <h3>Todos</h3>
         <p>Todos are simple checklists organized by <strong>category</strong>. No due dates — just things you need to do.</p>
         <ul>
           <li><strong>Add a todo</strong> — enter the action and a category label, then click Create</li>
+          <li><strong>Edit a todo</strong> — hover and click the pencil icon to change the action or category</li>
           <li><strong>Toggle a todo</strong> — click the checkbox to mark it done/pending</li>
           <li><strong>Delete a todo</strong> — click the trash icon</li>
           <li><strong>Clean up</strong> — removes all completed todos at once</li>
@@ -165,7 +168,7 @@ export default function DocsPage() {
         </table>
 
         <h3>Reminders</h3>
-        <p>When a task&apos;s reminder time arrives, the bot sends you a message with the task details. The task is automatically marked as completed after the reminder is sent. If you didn&apos;t link your Telegram account, you won&apos;t receive reminders — use the web dashboard instead.</p>
+        <p>When a task&apos;s reminder time arrives, the bot sends you a message with the task details. If the task is a <strong>one-time task</strong>, it is automatically marked as completed after the reminder is sent. <strong>Recurring tasks</strong> are not marked complete — they automatically reschedule to the next occurrence.</p>
 
         <h3>Date Format</h3>
         <p>Tasks use the format: <code>YYYY-MM-DD HH:mm</code> (24-hour time). Examples:</p>
@@ -178,6 +181,8 @@ export default function DocsPage() {
         <ul>
           <li><strong>Use Telegram for quick capture</strong> — add tasks and todos on the go with your phone</li>
           <li><strong>Use the web for review</strong> — the dashboard gives you a full overview of everything</li>
+          <li><strong>Recurring tasks</strong> — perfect for standups, workouts, daily habits. Use /addrecurring or the dropdown in the task form.</li>
+          <li><strong>Search bar</strong> — filter your tasks and todos by keyword to find what you need fast</li>
           <li><strong>Set reminders for important deadlines</strong> — the bot will ping you at the exact time</li>
           <li><strong>Todo categories</strong> help you organize — use tags like #Work, #Personal, #Shopping</li>
           <li><strong>Rotate your key</strong> if you accidentally shared it — old key stops working immediately</li>
