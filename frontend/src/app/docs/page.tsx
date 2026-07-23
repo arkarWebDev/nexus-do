@@ -1,280 +1,271 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Docs — NexusDo',
-  description: 'Learn how to use NexusDo to manage your tasks and todos',
-};
+'use client';
 
 export default function DocsPage() {
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b">
-        <div className="flex items-center justify-between px-4 md:px-8 h-14 max-w-[800px] mx-auto">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <svg
-                className="h-4 w-4 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                />
-              </svg>
-            </div>
-            <span className="text-sm font-semibold">NexusDo</span>
-          </Link>
-          <Link
-            href="/"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Open App →
-          </Link>
+    <div className="mx-auto max-w-3xl px-4 py-12 font-mono text-sm leading-relaxed">
+      <style>{`
+        .docs h1 { font-size: 1.5rem; font-weight: 700; margin: 2.5rem 0 0.5rem; letter-spacing: -0.02em; }
+        .docs h1:first-child { margin-top: 0; }
+        .docs h2 { font-size: 1.15rem; font-weight: 600; margin: 2rem 0 0.35rem; letter-spacing: -0.01em; }
+        .docs p { margin: 0.4rem 0; opacity: 0.85; }
+        .docs ul, .docs ol { padding-left: 1.25rem; margin: 0.35rem 0; }
+        .docs li { margin: 0.2rem 0; opacity: 0.85; }
+        .docs code { background: rgba(128,128,128,0.12); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9em; }
+        .docs pre { background: rgba(128,128,128,0.08); padding: 0.9em 1em; border-radius: 6px; overflow-x: auto; margin: 0.5rem 0; font-size: 0.85rem; }
+        .docs pre code { background: none; padding: 0; }
+        .docs hr { border: none; border-top: 1px solid rgba(128,128,128,0.15); margin: 2rem 0; }
+        .docs .note { background: rgba(59,130,246,0.08); border-left: 3px solid #3b82f6; padding: 0.6em 1em; border-radius: 0 6px 6px 0; margin: 0.75rem 0; font-size: 0.9em; }
+        .docs .warn { background: rgba(234,179,8,0.08); border-left: 3px solid #eab308; padding: 0.6em 1em; border-radius: 0 6px 6px 0; margin: 0.75rem 0; font-size: 0.9em; }
+      `}</style>
+
+      <div className="docs">
+        <h1>NexusDo — Production Deployment Guide</h1>
+        <p>Deploy the NestJS backend + Next.js frontend on a Ubuntu/Debian VPS with Nginx, PM2, and PostgreSQL.</p>
+
+        <hr />
+
+        <h2>Architecture Overview</h2>
+        <ul>
+          <li><strong>Backend</strong> — NestJS REST API, runs on port <code>3001</code></li>
+          <li><strong>Frontend</strong> — Next.js 16 (standalone), runs on port <code>3000</code></li>
+          <li><strong>Database</strong> — PostgreSQL (Neon cloud or self-hosted)</li>
+          <li><strong>Telegram Bot</strong> — Optional, enabled when <code>TELEGRAM_BOT_TOKEN</code> is set</li>
+          <li><strong>Reverse Proxy</strong> — Nginx on port 80/443</li>
+          <li><strong>Process Manager</strong> — PM2 keeps both apps alive</li>
+        </ul>
+
+        <pre><code>{`Browser -> Nginx :80 -> /api/* -> Backend :3001
+                 -> /*    -> Frontend :3000`}</code></pre>
+
+        <hr />
+
+        <h2>1. Prerequisites on Your VPS</h2>
+        <pre><code>{`sudo apt update && sudo apt upgrade -y
+sudo apt install -y nginx certbot python3-certbot-nginx git curl
+
+# Install Node.js 22 (via NodeSource)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Install PM2 globally
+sudo npm install -g pm2
+
+# Verify
+node -v   # should be v22.x
+npm -v    # should be 10.x
+pm2 -v`}</code></pre>
+
+        <hr />
+
+        <h2>2. Database (PostgreSQL)</h2>
+
+        <p>You have two options:</p>
+
+        <h3>Option A: Neon (Serverless Cloud) — already in your .env</h3>
+        <p>Your existing <code>DATABASE_URL</code> points to Neon. No setup needed — the connection string already works from any IP.</p>
+        <pre><code>{`DATABASE_URL="postgresql://neondb_owner:...@ep-...aws.neon.tech/neondb?sslmode=require"`}</code></pre>
+        <div className="note">Neon is already configured. Skip to Step 3 if you&apos;re keeping it.</div>
+
+        <h3>Option B: Self-Hosted PostgreSQL on the VPS</h3>
+        <p>If you prefer running your own database:</p>
+        <pre><code>{`sudo apt install -y postgresql postgresql-contrib
+sudo systemctl enable postgresql
+sudo -u postgres psql`}</code></pre>
+        <pre><code>{`-- Inside psql:
+CREATE DATABASE nexusdo;
+CREATE USER nexusdo_user WITH PASSWORD 'your-strong-password';
+GRANT ALL PRIVILEGES ON DATABASE nexusdo TO nexusdo_user;
+ALTER DATABASE nexusdo OWNER TO nexusdo_user;
+\\q`}</code></pre>
+        <p>Then update your <code>.env</code>:</p>
+        <pre><code>{`DATABASE_URL=postgresql://nexusdo_user:your-strong-password@localhost:5432/nexusdo`}</code></pre>
+
+        <hr />
+
+        <h2>3. Clone &amp; Configure</h2>
+        <pre><code>{`cd /home
+git clone https://github.com/YOUR_USER/NexusDo.git
+cd NexusDo`}</code></pre>
+
+        <h3>Backend Environment</h3>
+        <pre><code>{`cp backend/.env.example backend/.env
+nano backend/.env`}</code></pre>
+        <pre><code>{`DATABASE_URL="your-postgres-connection-string"
+TELEGRAM_BOT_TOKEN="your-telegram-bot-token"   # optional, leave empty to disable
+PORT=3001
+CORS_ORIGIN="https://your-domain.com"           # use your actual domain`}</code></pre>
+
+        <h3>Frontend Environment</h3>
+        <pre><code>{`nano frontend/.env.production`}</code></pre>
+        <pre><code>{`# Browser-side API requests go to /api (same origin via nginx)
+NEXT_PUBLIC_API_URL=/api`}</code></pre>
+
+        <div className="warn">
+          <strong>Important:</strong> <code>NEXT_PUBLIC_API_URL</code> must be <code>/api</code> so the browser calls the backend through Nginx on the same domain. This avoids CORS issues. If you change it, update <code>CORS_ORIGIN</code> in the backend <code>.env</code> to match.
         </div>
-      </header>
 
-      <main className="max-w-[720px] mx-auto p-4 md:p-8">
-        <article className="space-y-14">
-          {/* Hero */}
-          <section className="space-y-3">
-            <h1 className="text-3xl font-bold tracking-tight">
-              Welcome to NexusDo
-            </h1>
-            <p className="text-muted-foreground text-base leading-relaxed">
-              NexusDo helps you stay organized. Create tasks with reminders, track
-              todos by category, and manage everything from your browser or
-              Telegram — all in sync.
-            </p>
-          </section>
+        <hr />
 
-          {/* Quick Start */}
-          <Section title="Getting Started">
-            <Step num={1} title="Create your account">
-              Open the app and click <strong>Create account</strong>. You&apos;ll
-              get a unique API key — this is your password. Save it somewhere safe,
-              like a password manager.
-            </Step>
-            <Step num={2} title="Start adding tasks and todos">
-              Once logged in, you&apos;ll see your dashboard. Use the <strong>
-                Add Task
-              </strong> button to schedule reminders, or <strong>Add Todo</strong>
-              {' '}
-              to organize items by category.
-            </Step>
-            <Step num={3} title="Connect Telegram (optional)">
-              Copy your API key from <strong>Settings</strong> and send{' '}
-              <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">
-                /start YOUR_KEY
-              </code> to the bot. You&apos;ll get reminders and can manage
-              everything from chat.
-            </Step>
-          </Section>
+        <h2>4. Build Both Apps</h2>
 
-          {/* Web Dashboard */}
-          <Section title="Web Dashboard">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              The dashboard is split into two sections:
-            </p>
+        <h3>Backend</h3>
+        <pre><code>{`cd backend
+npm ci
+npm run build
+# dist/ folder is created
+cd ..`}</code></pre>
 
-            <FeatureBlock
-              title="Tasks"
-              icon="⏰"
-              desc="Time-based reminders. Each task has a date and time — perfect for deadlines, appointments, or anything with a due date."
-              items={[
-                "Click Add Task and pick a date, time, and description",
-                "Tap the checkbox to mark a task as done",
-                "Overdue tasks show in red with an overdue label",
-                "Click the × to delete a task",
-                "Use the Clear button to remove all completed tasks at once",
-              ]}
-            />
+        <h3>Frontend</h3>
+        <pre><code>{`cd frontend
+npm ci
+npm run build
+# .next/standalone/ folder is created
+cd ..`}</code></pre>
 
-            <FeatureBlock
-              title="Todos"
-              icon="📋"
-              desc="Category-based items. Group your todos by category like Work, Personal, Health, or any label you choose."
-              items={[
-                "Click Add Todo with a description and a category",
-                "Tap the checkbox to mark as done or undo",
-                "Each category gets its own color badge",
-                "Todos are ordered with pending first, then completed",
-              ]}
-            />
+        <hr />
 
-            <FeatureBlock
-              title="Settings"
-              icon="⚙️"
-              desc="Manage your account. Access it from the gear icon in the dashboard header."
-              items={[
-                "View or copy your API key for Telegram linking",
-                "Check if your Telegram account is connected",
-                "Rotate your API key if you need a new one",
-              ]}
-            />
-          </Section>
+        <h2>5. Nginx Configuration</h2>
+        <pre><code>{`sudo nano /etc/nginx/sites-available/nexusdo`}</code></pre>
+        <pre><code>{`server {
+    listen 80;
+    server_name your-domain.com;    # change this
 
-          {/* Telegram Bot */}
-          <Section title="Telegram Bot">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              The bot lets you manage tasks and todos without opening the browser.
-              It syncs with the same account — anything you add from the bot
-              appears on the web dashboard and vice versa.
-            </p>
+    client_max_body_size 10m;
 
-            <h3 className="text-base font-semibold mt-6 mb-3">
-              Linking Your Account
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Send this to the bot on Telegram:
-            </p>
-            <div className="rounded-lg bg-muted/50 border p-3 mt-2 mb-2">
-              <code className="text-sm font-mono">/start YOUR_API_KEY</code>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Find your API key in Settings → API Key. The bot deletes your
-              message immediately so your key stays private.
-            </p>
+    # API -> NestJS backend
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 90;
+    }
 
-            <h3 className="text-base font-semibold mt-8 mb-4">
-              All Bot Commands
-            </h3>
+    # Everything else -> Next.js frontend
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}`}</code></pre>
 
-            <div className="space-y-3">
-              <Cmd cmd="/start &lt;key&gt;" desc="Link your account with your API key" />
-              <Cmd cmd="/addtask &lt;date&gt; &lt;time&gt; &lt;action&gt;" desc="Create a task with a reminder. Example: /addtask 2026-08-01 14:30 Buy groceries" />
-              <Cmd cmd="/tasks" desc="See your pending tasks with their scheduled times" />
-              <Cmd cmd="/donetask &lt;id&gt;" desc="Mark a task as completed. Use the ID shown in /tasks" />
-              <Cmd cmd="/cleantasks" desc="Delete all completed tasks in one go" />
-              <Cmd cmd="/addtodo &lt;action&gt; #&lt;category&gt;" desc="Create a todo. The #tag at the end sets the category. Leave it out for General. Example: /addtodo Review PR #Work" />
-              <Cmd cmd="/todos" desc="Shows all your todos. Tap any row to toggle between done and not done" />
-              <Cmd cmd="/donetodo &lt;id&gt;" desc="Mark a todo as completed" />
-              <Cmd cmd="/cleantodos" desc="Delete all completed todos in one go" />
-              <Cmd cmd="/rotatekey" desc="Get a new API key. Your old key stops working immediately. Useful if your key gets exposed" />
-            </div>
-          </Section>
+        <pre><code>{`# Enable the site
+sudo ln -s /etc/nginx/sites-available/nexusdo /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default  # remove default on fresh VPS
+sudo nginx -t
+sudo systemctl reload nginx`}</code></pre>
 
-          {/* FAQ */}
-          <Section title="Tips & FAQ">
-            <Faq
-              q="How do I get reminders?"
-              a="Add a task with a future date and time. The system checks every minute and sends you a Telegram message when the time arrives. Your task gets marked as done automatically after the reminder is sent."
-            />
-            <Faq
-              q="Can I use only the bot without the web app?"
-              a="Yes. Register once on the web to get your API key, link your Telegram account, and you can manage everything from the bot after that."
-            />
-            <Faq
-              q="What happens if I rotate my API key?"
-              a="The old key stops working immediately. You'll need to use the new key to log in. Your Telegram account stays linked — you don't need to re-link it."
-            />
-            <Faq
-              q="How do I change a task's time?"
-              a="Delete the task and create a new one with the correct time. Editing existing tasks is coming soon."
-            />
-            <Faq
-              q="Can I share my account with someone?"
-              a="Each account has one API key. Sharing the key gives someone full access to your tasks and todos. Keep it private."
-            />
-          </Section>
-        </article>
-      </main>
-    </div>
-  );
-}
+        <div className="note">
+          If you don&apos;t have a domain yet, use the server&apos;s IP as <code>server_name</code>. Set <code>CORS_ORIGIN</code> in backend <code>.env</code> to <code>http://YOUR_IP</code>.
+        </div>
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <h2 className="text-xl font-semibold mb-5">{title}</h2>
-      {children}
-    </section>
-  );
-}
+        <hr />
 
-function Step({
-  num,
-  title,
-  children,
-}: {
-  num: number;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex gap-4 mt-4 first:mt-0">
-      <div className="shrink-0 h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-        {num}
+        <h2>6. Start with PM2</h2>
+
+        <h3>Backend</h3>
+        <pre><code>{`cd /home/NexusDo/backend
+pm2 start dist/main.js --name nexusdo-backend --node-args="--enable-source-maps"
+pm2 save`}</code></pre>
+
+        <h3>Frontend</h3>
+        <pre><code>{`cd /home/NexusDo/frontend
+PORT=3000 HOSTNAME=0.0.0.0 pm2 start .next/standalone/server.js --name nexusdo-frontend
+pm2 save`}</code></pre>
+
+        <h3>Auto-start on reboot</h3>
+        <pre><code>{`pm2 startup
+# Follow the printed instructions (copy-paste the sudo command)
+pm2 save`}</code></pre>
+
+        <h3>Useful PM2 Commands</h3>
+        <pre><code>{`pm2 status                # see running processes
+pm2 logs nexusdo-backend   # backend logs
+pm2 logs nexusdo-frontend  # frontend logs
+pm2 restart all            # restart everything
+pm2 delete all             # stop and remove all`}</code></pre>
+
+        <hr />
+
+        <h2>7. SSL with Certbot (HTTPS)</h2>
+        <p>Once your domain DNS points to the VPS IP:</p>
+        <pre><code>{`sudo certbot --nginx -d your-domain.com
+# Follow prompts, select redirect HTTP->HTTPS`}</code></pre>
+        <p>Certbot auto-renews. Verify auto-renewal:</p>
+        <pre><code>{`sudo certbot renew --dry-run`}</code></pre>
+
+        <div className="note">
+          After enabling HTTPS, update <code>CORS_ORIGIN</code> in backend <code>.env</code> to <code>https://your-domain.com</code> and restart the backend with <code>pm2 restart nexusdo-backend</code>.
+        </div>
+
+        <hr />
+
+        <h2>8. Database Migrations (First Time)</h2>
+        <p>Run this once to create the tables:</p>
+        <pre><code>{`cd /home/NexusDo/backend
+npx drizzle-kit push`}</code></pre>
+        <p>Or if you have migration files in <code>drizzle/</code>:</p>
+        <pre><code>{`npx drizzle-kit migrate`}</code></pre>
+
+        <hr />
+
+        <h2>9. Update / Redeploy</h2>
+        <pre><code>{`cd /home/NexusDo
+git pull
+
+# Rebuild backend
+cd backend
+npm ci
+npm run build
+pm2 restart nexusdo-backend
+
+# Rebuild frontend
+cd ../frontend
+npm ci
+npm run build
+pm2 restart nexusdo-frontend`}</code></pre>
+
+        <hr />
+
+        <h2>Environment Variables Reference</h2>
+        <pre><code>{`# backend/.env
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
+TELEGRAM_BOT_TOKEN=123:abc              # optional
+PORT=3001                               # default
+CORS_ORIGIN=https://your-domain.com     # default: http://localhost:3000
+
+# frontend/.env.production (or set at build time)
+NEXT_PUBLIC_API_URL=/api                # default: /api`}</code></pre>
+
+        <hr />
+
+        <h2>Troubleshooting</h2>
+
+        <p><strong>Backend won&apos;t start?</strong> Check the database URL is reachable:</p>
+        <pre><code>{`pm2 logs nexusdo-backend`}</code></pre>
+
+        <p><strong>CORS errors in browser?</strong> Make sure <code>CORS_ORIGIN</code> matches exactly the URL you access the site from (including <code>https://</code>).</p>
+
+        <p><strong>API returns 404?</strong> The nginx config strips <code>/api/</code> prefix. Backend routes are at root level: <code>/tasks</code>, <code>/todos</code>, <code>/auth/login</code>, etc.</p>
+
+        <p><strong>PM2 processes crash after reboot?</strong> Run <code>pm2 save</code> and <code>pm2 startup</code> again.</p>
+
+        <p><strong>Frontend shows blank page?</strong> Verify <code>.next/standalone/server.js</code> exists. If not, rebuild: <code>npm run build</code>.</p>
+
+        <p><strong>Port already in use?</strong></p>
+        <pre><code>{`sudo lsof -i :3000
+sudo lsof -i :3001
+sudo kill -9 PID`}</code></pre>
       </div>
-      <div>
-        <p className="text-sm font-semibold mb-0.5">{title}</p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {children}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function FeatureBlock({
-  title,
-  icon,
-  desc,
-  items,
-}: {
-  title: string;
-  icon: string;
-  desc: string;
-  items: string[];
-}) {
-  return (
-    <div className="mt-5 rounded-lg border p-4">
-      <p className="text-sm font-semibold mb-1">
-        {icon} {title}
-      </p>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-3">
-        {desc}
-      </p>
-      <ul className="space-y-1.5">
-        {items.map((item, i) => (
-          <li
-            key={i}
-            className="text-sm text-muted-foreground leading-relaxed pl-4 relative before:absolute before:left-0 before:top-[0.6em] before:h-1 before:w-1 before:rounded-full before:bg-muted-foreground/40"
-          >
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function Cmd({ cmd, desc }: { cmd: string; desc: string }) {
-  return (
-    <div className="rounded-lg border p-3">
-      <code className="text-sm font-mono font-medium text-primary">{cmd}</code>
-      <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-        {desc}
-      </p>
-    </div>
-  );
-}
-
-function Faq({ q, a }: { q: string; a: string }) {
-  return (
-    <div className="border-b last:border-0 py-3 first:pt-0">
-      <p className="text-sm font-semibold">{q}</p>
-      <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{a}</p>
     </div>
   );
 }
