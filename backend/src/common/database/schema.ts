@@ -32,6 +32,7 @@ export const tasks = pgTable('tasks', {
   action: text('action').notNull(),
   remindAt: timestamp('remind_at').notNull(),
   isCompleted: boolean('is_completed').default(false).notNull(),
+  recurrence: varchar('recurrence', { length: 32 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

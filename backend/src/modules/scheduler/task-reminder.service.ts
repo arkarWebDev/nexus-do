@@ -6,6 +6,25 @@ import { eq, and, lte } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
 import { tasks, users } from '../../common/database/schema';
 
+function nextOccurrence(from: Date, recurrence: string): Date {
+  const d = new Date(from);
+  switch (recurrence) {
+    case 'daily':
+      d.setDate(d.getDate() + 1);
+      break;
+    case 'weekly':
+      d.setDate(d.getDate() + 7);
+      break;
+    case 'weekdays': {
+      const day = d.getDay();
+      const add = day === 5 ? 3 : day === 6 ? 2 : 1;
+      d.setDate(d.getDate() + add);
+      break;
+    }
+  }
+  return d;
+}
+
 @Injectable()
 export class TaskReminderService {
   private readonly logger = new Logger(TaskReminderService.name);
@@ -25,6 +44,7 @@ export class TaskReminderService {
         userId: tasks.userId,
         action: tasks.action,
         remindAt: tasks.remindAt,
+        recurrence: tasks.recurrence,
       })
       .from(tasks)
       .where(
@@ -47,17 +67,26 @@ export class TaskReminderService {
           .limit(1);
 
         if (user?.telegramChatId) {
+          const prefix = task.recurrence ? '🔁 ' : '🔔 ';
           await this.bot.telegram.sendMessage(
             user.telegramChatId,
-            `🔔 **Task Reminder**\n\n${task.action}`,
+            `${prefix}**Task Reminder**\n\n${task.action}`,
             { parse_mode: 'Markdown' },
           );
         }
 
-        await this.db
-          .update(tasks)
-          .set({ isCompleted: true, updatedAt: new Date() })
-          .where(eq(tasks.id, task.id));
+        if (task.recurrence) {
+          const next = nextOccurrence(task.remindAt, task.recurrence);
+          await this.db
+            .update(tasks)
+            .set({ remindAt: next, updatedAt: new Date() })
+            .where(eq(tasks.id, task.id));
+        } else {
+          await this.db
+            .update(tasks)
+            .set({ isCompleted: true, updatedAt: new Date() })
+            .where(eq(tasks.id, task.id));
+        }
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : 'Unknown error';
         this.logger.warn(`Failed to send reminder for task #${task.id}: ${msg}`);

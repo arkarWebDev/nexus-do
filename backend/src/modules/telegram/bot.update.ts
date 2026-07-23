@@ -137,6 +137,7 @@ export class BotUpdate {
       `Linked! Timezone set to UTC${tzStr}. Commands:\n\n` +
         '/addtask <YYYY-MM-DD HH:mm> <action>\n' +
         '/edittask <id> <YYYY-MM-DD HH:mm> <new action>\n' +
+        '/addrecurring <daily|weekly|weekdays> <HH:mm> <action>\n' +
         '/tasks — list pending tasks\n' +
         '/donetask <id>\n' +
         '/cleantasks — remove completed tasks\n\n' +
@@ -198,6 +199,54 @@ export class BotUpdate {
 
     await ctx.reply(
       `Task created: "${action}"\nReminder set for ${match[1]} at ${match[2]}`,
+    );
+  }
+
+  @Command('addrecurring')
+  async onAddRecurring(@Ctx() ctx: Context) {
+    const chatId = this.requireAuth(ctx);
+    if (!chatId) return;
+
+    const userId = await this.authenticatedUserId(chatId);
+    if (!userId) {
+      await ctx.reply('Please link your account first: /start <API_KEY> <UTC_OFFSET>');
+      return;
+    }
+
+    const text = (ctx.message as { text?: string })?.text ?? '';
+    const args = text.replace(/^\/\S+(@\S+)?\s*/, '').trim();
+
+    if (!args) {
+      await ctx.reply(
+        'Usage: /addrecurring <daily|weekly|weekdays> <HH:mm> <action>\nExample: /addrecurring daily 09:00 Standup meeting',
+      );
+      return;
+    }
+
+    const match = args.match(/^(daily|weekly|weekdays)\s+(\d{2}:\d{2})\s+(.+)$/s);
+    if (!match) {
+      await ctx.reply(
+        'Invalid format.\nUsage: /addrecurring <daily|weekly|weekdays> <HH:mm> <action>\nExample: /addrecurring daily 09:00 Standup meeting',
+      );
+      return;
+    }
+
+    const recurrence = match[1];
+    const time = match[2];
+    const action = match[3];
+
+    const today = new Date();
+    const dateStr = `${today.toISOString().split('T')[0]}T${time}:00`;
+    const tz = await this.getUserTz(userId);
+    const remindAt = this.localToUtc(dateStr, tz);
+
+    await this.db.insert(tasks).values({ userId, action, remindAt, recurrence });
+
+    this.events.emit({ type: 'tasks', userId });
+
+    const label = { daily: 'Daily', weekly: 'Weekly', weekdays: 'Weekdays' }[recurrence];
+    await ctx.reply(
+      `${label} task created: "${action}"\nFirst reminder at ${time}${tz >= 0 ? '+' : ''}${(tz / 60).toFixed(0).padStart(2, '0')}:${String(Math.abs(tz % 60)).padStart(2, '0')}`,
     );
   }
 

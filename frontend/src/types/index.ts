@@ -4,6 +4,7 @@ export interface Task {
   action: string;
   remindAt: string;
   isCompleted: boolean;
+  recurrence: string | null;
   createdAt: string;
   updatedAt: string;
 }

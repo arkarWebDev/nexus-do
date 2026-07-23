@@ -14,7 +14,7 @@ interface UseDashboardReturn {
   isLoading: boolean;
   error: string;
   clearError: () => void;
-  addTask: (action: string, remindAt: string) => Promise<void>;
+  addTask: (action: string, remindAt: string, recurrence?: string) => Promise<void>;
   addTodo: (action: string, category: string) => Promise<void>;
   toggleTask: (id: number) => Promise<void>;
   toggleTodo: (id: number) => Promise<void>;
@@ -22,7 +22,7 @@ interface UseDashboardReturn {
   deleteTodo: (id: number) => Promise<void>;
   cleanupTasks: () => Promise<void>;
   cleanupTodos: () => Promise<void>;
-  updateTask: (id: number, action: string, remindAt: string) => Promise<void>;
+  updateTask: (id: number, action: string, remindAt: string, recurrence?: string | null) => Promise<void>;
   updateTodo: (id: number, action: string, category: string) => Promise<void>;
 }
 
@@ -87,9 +87,9 @@ export function useDashboard(q?: string): UseDashboardReturn {
   );
 
   const addTask = useCallback(
-    async (action: string, remindAt: string) =>
+    async (action: string, remindAt: string, recurrence?: string) =>
       wrapMutation(
-        () => apiPost('/tasks', { action, remindAt }),
+        () => apiPost('/tasks', { action, remindAt, ...(recurrence ? { recurrence } : {}) }),
         'Failed to create task',
       ),
     [wrapMutation],
@@ -157,9 +157,9 @@ export function useDashboard(q?: string): UseDashboardReturn {
   );
 
   const updateTask = useCallback(
-    async (id: number, action: string, remindAt: string) =>
+    async (id: number, action: string, remindAt: string, recurrence?: string | null) =>
       wrapMutation(
-        () => apiPatch(`/tasks/${id}`, { action, remindAt }),
+        () => apiPatch(`/tasks/${id}`, { action, remindAt, recurrence }),
         'Failed to update task',
       ),
     [wrapMutation],

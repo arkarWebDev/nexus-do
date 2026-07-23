@@ -1,4 +1,6 @@
-import { IsString, IsNotEmpty, IsISO8601 } from 'class-validator';
+import { IsString, IsNotEmpty, IsISO8601, IsOptional, IsIn } from 'class-validator';
+
+const RECURRENCE_OPTIONS = ['daily', 'weekly', 'weekdays'] as const;
 
 export class CreateTaskDto {
   @IsString()
@@ -8,4 +10,8 @@ export class CreateTaskDto {
   @IsISO8601()
   @IsNotEmpty()
   remindAt: string;
+
+  @IsOptional()
+  @IsIn(RECURRENCE_OPTIONS)
+  recurrence?: (typeof RECURRENCE_OPTIONS)[number];
 }

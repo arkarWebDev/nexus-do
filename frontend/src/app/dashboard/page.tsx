@@ -266,6 +266,7 @@ export default function DashboardPage() {
           id={editingTask.id}
           action={editingTask.action}
           remindAt={editingTask.remindAt}
+          recurrence={editingTask.recurrence}
           onSave={updateTask}
           onClose={() => setEditingTask(null)}
         />

@@ -20,6 +20,7 @@ export class TasksService {
         userId,
         action: dto.action,
         remindAt: new Date(dto.remindAt),
+        ...(dto.recurrence ? { recurrence: dto.recurrence } : {}),
       })
       .returning();
 
@@ -46,6 +47,7 @@ export class TasksService {
       .set({
         ...(dto.action !== undefined ? { action: dto.action } : {}),
         ...(dto.remindAt !== undefined ? { remindAt: new Date(dto.remindAt) } : {}),
+        ...(dto.recurrence !== undefined ? { recurrence: dto.recurrence } : {}),
         updatedAt: new Date(),
       })
       .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))

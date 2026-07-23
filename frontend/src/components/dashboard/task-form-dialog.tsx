@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 
 interface TaskFormDialogProps {
-  onAdd: (action: string, remindAt: string) => Promise<void>;
+  onAdd: (action: string, remindAt: string, recurrence?: string) => Promise<void>;
 }
 
 export function TaskFormDialog({ onAdd }: TaskFormDialogProps) {
@@ -23,18 +23,23 @@ export function TaskFormDialog({ onAdd }: TaskFormDialogProps) {
   const [action, setAction] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [recurrence, setRecurrence] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!action.trim() || !date || !time) return;
+    if (!action.trim()) return;
+    if (!recurrence && (!date || !time)) return;
+    if (recurrence && !time) return;
     setSubmitting(true);
     try {
-      const localDate = new Date(`${date}T${time}:00`);
-      await onAdd(action.trim(), localDate.toISOString());
+      const dateStr = date ? `${date}T${time}:00` : new Date().toISOString();
+      const localDate = new Date(dateStr);
+      await onAdd(action.trim(), localDate.toISOString(), recurrence || undefined);
       setAction('');
       setDate('');
       setTime('');
+      setRecurrence('');
       setOpen(false);
     } finally {
       setSubmitting(false);
@@ -71,7 +76,7 @@ export function TaskFormDialog({ onAdd }: TaskFormDialogProps) {
           <DialogHeader>
             <DialogTitle>New Task</DialogTitle>
             <DialogDescription>
-              Create a task with a reminder time.
+              Create a task with an optional recurrence.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -88,32 +93,43 @@ export function TaskFormDialog({ onAdd }: TaskFormDialogProps) {
                 autoFocus
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="task-date" className="text-xs font-medium">
-                  Date
-                </Label>
-                <Input
-                  id="task-date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="task-time" className="text-xs font-medium">
-                  Time
-                </Label>
-                <Input
-                  id="task-time"
-                  type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Recurrence (optional)</Label>
+              <select
+                value={recurrence}
+                onChange={(e) => setRecurrence(e.target.value)}
+                className="w-full h-9 px-3 text-sm rounded-md border bg-background"
+              >
+                <option value="">None — one-time reminder</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="weekdays">Weekdays (Mon-Fri)</option>
+              </select>
             </div>
+            {!recurrence && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="task-date" className="text-xs font-medium">
+                    Date
+                  </Label>
+                  <Input id="task-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="task-time" className="text-xs font-medium">
+                    Time
+                  </Label>
+                  <Input id="task-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
+                </div>
+              </div>
+            )}
+            {recurrence && (
+              <div className="space-y-2">
+                <Label htmlFor="task-time-recur" className="text-xs font-medium">
+                  Time (first reminder)
+                </Label>
+                <Input id="task-time-recur" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="submit" disabled={submitting}>

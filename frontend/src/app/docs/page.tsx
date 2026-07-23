@@ -107,6 +107,11 @@ export default function DocsPage() {
               <td><code>/addtask 2026-08-01 14:30 Buy groceries</code></td>
             </tr>
             <tr>
+              <td><code>/addrecurring &lt;daily|weekly|weekdays&gt; &lt;HH:mm&gt; &lt;action&gt;</code></td>
+              <td>Create a recurring task</td>
+              <td><code>/addrecurring daily 09:00 Standup meeting</code></td>
+            </tr>
+            <tr>
               <td><code>/edittask &lt;id&gt; &lt;date&gt; &lt;time&gt; &lt;action&gt;</code></td>
               <td>Edit an existing task</td>
               <td><code>/edittask 3 2026-08-01 15:00 Updated groceries</code></td>

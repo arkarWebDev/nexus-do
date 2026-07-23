@@ -85,6 +85,11 @@ export const TaskItem = memo(function TaskItem({
             {formatDate(task.remindAt)}
             {isOverdue && ' — overdue'}
           </span>
+          {task.recurrence && (
+            <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary">
+              {task.recurrence}
+            </span>
+          )}
         </div>
       </div>
       <Button
