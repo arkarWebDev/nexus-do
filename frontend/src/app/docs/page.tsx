@@ -120,6 +120,10 @@ cd ..`}</code></pre>
 npm ci
 npm run build
 # .next/standalone/ folder is created
+# Copy static assets into standalone (required for Next.js standalone output)
+cp -r .next/static .next/standalone/.next/
+# Copy public folder if you have one
+cp -r public .next/standalone/ 2>/dev/null || true
 cd ..`}</code></pre>
 
         <hr />
@@ -174,7 +178,7 @@ sudo systemctl reload nginx`}</code></pre>
 
         <h3>Backend</h3>
         <pre><code>{`cd /home/NexusDo/backend
-pm2 start dist/main.js --name nexusdo-backend --node-args="--enable-source-maps"
+pm2 start dist/src/main.js --name nexusdo-backend --node-args="--enable-source-maps"
 pm2 save`}</code></pre>
 
         <h3>Frontend</h3>
