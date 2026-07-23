@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const { isAuthenticated, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
+  const [search, setSearch] = useState('');
   const {
     pendingTasks,
     completedTasks,
@@ -45,7 +46,7 @@ export default function DashboardPage() {
     cleanupTodos,
     updateTask,
     updateTodo,
-  } = useDashboard();
+  } = useDashboard(search);
 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
@@ -87,8 +88,22 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-sm font-semibold tracking-tight">NexusDo</h1>
             </div>
-          </div>
-          <div className="flex items-center gap-1">
+            </div>
+            <div className="flex-1 max-w-sm mx-4">
+              <div className="relative">
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full h-8 pl-8 pr-2 text-sm rounded-md border bg-muted/50 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
             <Link href="/settings">
               <Button variant="ghost" size="sm">
                 <svg

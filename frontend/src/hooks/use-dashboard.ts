@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from '@/lib/api';
 import type { Task, Todo } from '@/types';
 
@@ -26,12 +26,14 @@ interface UseDashboardReturn {
   updateTodo: (id: number, action: string, category: string) => Promise<void>;
 }
 
-export function useDashboard(): UseDashboardReturn {
+export function useDashboard(q?: string): UseDashboardReturn {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
+  const qRef = useRef(q);
+  qRef.current = q;
 
   useEffect(() => setMounted(true), []);
 
@@ -40,9 +42,11 @@ export function useDashboard(): UseDashboardReturn {
   const fetchAll = useCallback(async (resetLoading = true) => {
     try {
       if (resetLoading) setIsLoading(true);
+      const q = qRef.current;
+      const qs = q ? `?q=${encodeURIComponent(q)}` : '';
       const [taskData, todoData] = await Promise.all([
-        apiGet<Task[]>('/tasks'),
-        apiGet<Todo[]>('/todos'),
+        apiGet<Task[]>(`/tasks${qs}`),
+        apiGet<Todo[]>(`/todos${qs}`),
       ]);
       setTasks(taskData);
       setTodos(todoData);
@@ -55,6 +59,11 @@ export function useDashboard(): UseDashboardReturn {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchAll(false), 300);
+    return () => clearTimeout(timer);
+  }, [q, fetchAll]);
 
   useEffect(() => {
     const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';

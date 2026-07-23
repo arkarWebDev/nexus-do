@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ilike } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
 import { todos } from '../../common/database/schema';
 import { CreateTodoDto } from './dto/create-todo.dto';
@@ -27,11 +27,16 @@ export class TodosService {
     return todo;
   }
 
-  async findAll(userId: number) {
+  async findAll(userId: number, q?: string) {
     return this.db
       .select()
       .from(todos)
-      .where(eq(todos.userId, userId))
+      .where(
+        and(
+          eq(todos.userId, userId),
+          q ? ilike(todos.action, `%${q}%`) : undefined,
+        ),
+      )
       .orderBy(todos.category, todos.createdAt);
   }
 

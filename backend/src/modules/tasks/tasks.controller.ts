@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   ParseIntPipe,
   UseGuards,
   Req,
@@ -29,9 +30,9 @@ export class TasksController {
   }
 
   @Get()
-  findAll(@Req() req: Request) {
+  findAll(@Req() req: Request, @Query('q') q?: string) {
     const user = req['user'] as User;
-    return this.tasksService.findAll(user.id);
+    return this.tasksService.findAll(user.id, q);
   }
 
   @Patch(':id')
