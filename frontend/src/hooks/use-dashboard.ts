@@ -73,35 +73,30 @@ export function useDashboard(q?: string): UseDashboardReturn {
     return () => es.close();
   }, [fetchAll]);
 
-  const wrapMutation = useCallback(
-    async (fn: () => Promise<void>, fallback: string) => {
+  const addTask = useCallback(
+    async (action: string, remindAt: string, recurrence?: string) => {
       try {
-        await fn();
-        await fetchAll();
+        const created = await apiPost<Task>('/tasks', { action, remindAt, ...(recurrence ? { recurrence } : {}) });
+        setTasks((prev) => [created, ...prev]);
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : fallback);
+        setError(err instanceof ApiError ? err.message : 'Failed to create task');
         throw err;
       }
     },
-    [fetchAll],
-  );
-
-  const addTask = useCallback(
-    async (action: string, remindAt: string, recurrence?: string) =>
-      wrapMutation(
-        () => apiPost('/tasks', { action, remindAt, ...(recurrence ? { recurrence } : {}) }),
-        'Failed to create task',
-      ),
-    [wrapMutation],
+    [],
   );
 
   const addTodo = useCallback(
-    async (action: string, category: string) =>
-      wrapMutation(
-        () => apiPost('/todos', { action, category }),
-        'Failed to create todo',
-      ),
-    [wrapMutation],
+    async (action: string, category: string) => {
+      try {
+        const created = await apiPost<Todo>('/todos', { action, category });
+        setTodos((prev) => [created, ...prev]);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'Failed to create todo');
+        throw err;
+      }
+    },
+    [],
   );
 
   const toggleTask = useCallback(
@@ -110,12 +105,16 @@ export function useDashboard(q?: string): UseDashboardReturn {
       setTasks((prev) =>
         prev.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)),
       );
-      await wrapMutation(
-        () => apiPatch(`/tasks/${id}/complete`),
-        'Failed to toggle task',
-      );
+      try {
+        await apiPatch(`/tasks/${id}/complete`);
+      } catch (err) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)),
+        );
+        setError(err instanceof ApiError ? err.message : 'Failed to toggle task');
+      }
     },
-    [wrapMutation, mounted],
+    [mounted],
   );
 
   const toggleTodo = useCallback(
@@ -124,54 +123,104 @@ export function useDashboard(q?: string): UseDashboardReturn {
       setTodos((prev) =>
         prev.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)),
       );
-      await wrapMutation(
-        () => apiPatch(`/todos/${id}/complete`),
-        'Failed to toggle todo',
-      );
+      try {
+        await apiPatch(`/todos/${id}/complete`);
+      } catch (err) {
+        setTodos((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)),
+        );
+        setError(err instanceof ApiError ? err.message : 'Failed to toggle todo');
+      }
     },
-    [wrapMutation, mounted],
+    [mounted],
   );
 
   const deleteTask = useCallback(
-    async (id: number) =>
-      wrapMutation(() => apiDelete(`/tasks/${id}`), 'Failed to delete task'),
-    [wrapMutation],
+    async (id: number) => {
+      const prev = tasks.find((t) => t.id === id);
+      setTasks((p) => p.filter((t) => t.id !== id));
+      try {
+        await apiDelete(`/tasks/${id}`);
+      } catch (err) {
+        if (prev) setTasks((p) => [...p, prev].sort((a, b) => a.id - b.id));
+        setError(err instanceof ApiError ? err.message : 'Failed to delete task');
+      }
+    },
+    [tasks],
   );
 
   const deleteTodo = useCallback(
-    async (id: number) =>
-      wrapMutation(() => apiDelete(`/todos/${id}`), 'Failed to delete todo'),
-    [wrapMutation],
+    async (id: number) => {
+      const prev = todos.find((t) => t.id === id);
+      setTodos((p) => p.filter((t) => t.id !== id));
+      try {
+        await apiDelete(`/todos/${id}`);
+      } catch (err) {
+        if (prev) setTodos((p) => [...p, prev].sort((a, b) => a.id - b.id));
+        setError(err instanceof ApiError ? err.message : 'Failed to delete todo');
+      }
+    },
+    [todos],
   );
 
   const cleanupTasks = useCallback(
-    async () =>
-      wrapMutation(() => apiDelete('/tasks/cleanup'), 'Failed to clean up tasks'),
-    [wrapMutation],
+    async () => {
+      const completed = tasks.filter((t) => t.isCompleted);
+      setTasks((p) => p.filter((t) => !t.isCompleted));
+      try {
+        await apiDelete('/tasks/cleanup');
+      } catch (err) {
+        setTasks((p) => [...p, ...completed].sort((a, b) => a.id - b.id));
+        setError(err instanceof ApiError ? err.message : 'Failed to clean up tasks');
+      }
+    },
+    [tasks],
   );
 
   const cleanupTodos = useCallback(
-    async () =>
-      wrapMutation(() => apiDelete('/todos/cleanup'), 'Failed to clean up todos'),
-    [wrapMutation],
+    async () => {
+      const completed = todos.filter((t) => t.isCompleted);
+      setTodos((p) => p.filter((t) => !t.isCompleted));
+      try {
+        await apiDelete('/todos/cleanup');
+      } catch (err) {
+        setTodos((p) => [...p, ...completed].sort((a, b) => a.id - b.id));
+        setError(err instanceof ApiError ? err.message : 'Failed to clean up todos');
+      }
+    },
+    [todos],
   );
 
   const updateTask = useCallback(
-    async (id: number, action: string, remindAt: string, recurrence?: string | null) =>
-      wrapMutation(
-        () => apiPatch(`/tasks/${id}`, { action, remindAt, recurrence }),
-        'Failed to update task',
-      ),
-    [wrapMutation],
+    async (id: number, action: string, remindAt: string, recurrence?: string | null) => {
+      const prev = tasks.find((t) => t.id === id);
+      setTasks((p) =>
+        p.map((t) => (t.id === id ? { ...t, action, remindAt, recurrence: recurrence ?? null } : t)),
+      );
+      try {
+        await apiPatch(`/tasks/${id}`, { action, remindAt, recurrence });
+      } catch (err) {
+        if (prev) setTasks((p) => p.map((t) => (t.id === id ? prev : t)));
+        setError(err instanceof ApiError ? err.message : 'Failed to update task');
+      }
+    },
+    [tasks],
   );
 
   const updateTodo = useCallback(
-    async (id: number, action: string, category: string) =>
-      wrapMutation(
-        () => apiPatch(`/todos/${id}`, { action, category }),
-        'Failed to update todo',
-      ),
-    [wrapMutation],
+    async (id: number, action: string, category: string) => {
+      const prev = todos.find((t) => t.id === id);
+      setTodos((p) =>
+        p.map((t) => (t.id === id ? { ...t, action, category } : t)),
+      );
+      try {
+        await apiPatch(`/todos/${id}`, { action, category });
+      } catch (err) {
+        if (prev) setTodos((p) => p.map((t) => (t.id === id ? prev : t)));
+        setError(err instanceof ApiError ? err.message : 'Failed to update todo');
+      }
+    },
+    [todos],
   );
 
   const pendingTasks = tasks.filter((t) => !t.isCompleted);

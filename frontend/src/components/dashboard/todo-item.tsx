@@ -35,7 +35,7 @@ export const TodoItem = memo(function TodoItem({
 
   return (
     <div
-      className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40 ${
+      className={`group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40 fade-in ${
         todo.isCompleted ? 'opacity-50' : ''
       }`}
     >
