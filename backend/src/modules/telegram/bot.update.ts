@@ -6,10 +6,14 @@ import { eq, and } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
 import { users, tasks, todos, type Todo } from '../../common/database/schema';
+import { EventsService } from '../../common/events/events.service';
 
 @Update()
 export class BotUpdate {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDb,
+    private readonly events: EventsService,
+  ) {}
 
   private async authenticatedUserId(chatId: number): Promise<number | null> {
     const [user] = await this.db
@@ -149,6 +153,8 @@ export class BotUpdate {
 
     await this.db.insert(tasks).values({ userId, action, remindAt });
 
+    this.events.emit({ type: 'tasks', userId });
+
     await ctx.reply(
       `Task created: "${action}"\nReminder set for ${match[1]} at ${match[2]}`,
     );
@@ -219,6 +225,7 @@ export class BotUpdate {
       return;
     }
 
+    this.events.emit({ type: 'tasks', userId });
     await ctx.reply(`Task #${task.id} marked as completed: "${task.action}"`);
   }
 
@@ -238,6 +245,7 @@ export class BotUpdate {
       .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)))
       .returning({ id: tasks.id });
 
+    this.events.emit({ type: 'tasks', userId });
     await ctx.reply(`Cleaned up ${deleted.length} completed task(s).`);
   }
 
@@ -283,6 +291,8 @@ export class BotUpdate {
     }
 
     await this.db.insert(todos).values({ userId, category, action });
+
+    this.events.emit({ type: 'todos', userId });
 
     await ctx.reply(`Todo created: [${category}] "${action}"`);
   }
@@ -354,6 +364,8 @@ export class BotUpdate {
       .set({ isCompleted: !todo.isCompleted, updatedAt: new Date() })
       .where(eq(todos.id, todoId));
 
+    this.events.emit({ type: 'todos', userId });
+
     await ctx.answerCbQuery(
       todo.isCompleted ? 'Marked as pending ⬜️' : 'Marked as done ✅',
     );
@@ -407,6 +419,8 @@ export class BotUpdate {
       return;
     }
 
+    this.events.emit({ type: 'todos', userId });
+
     await ctx.reply(
       `Todo #${todo.id} marked as completed: [${todo.category}] "${todo.action}"`,
     );
@@ -427,6 +441,8 @@ export class BotUpdate {
       .delete(todos)
       .where(and(eq(todos.userId, userId), eq(todos.isCompleted, true)))
       .returning({ id: todos.id });
+
+    this.events.emit({ type: 'todos', userId });
 
     await ctx.reply(`Cleaned up ${deleted.length} completed todo(s).`);
   }

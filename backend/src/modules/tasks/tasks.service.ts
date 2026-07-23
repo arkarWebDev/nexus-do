@@ -3,10 +3,14 @@ import { eq, and } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
 import { tasks } from '../../common/database/schema';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { EventsService } from '../../common/events/events.service';
 
 @Injectable()
 export class TasksService {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDb,
+    private readonly events: EventsService,
+  ) {}
 
   async create(userId: number, dto: CreateTaskDto) {
     const [task] = await this.db
@@ -18,6 +22,7 @@ export class TasksService {
       })
       .returning();
 
+    this.events.emit({ type: 'tasks', userId });
     return task;
   }
 
@@ -40,6 +45,7 @@ export class TasksService {
       throw new NotFoundException('Task not found');
     }
 
+    this.events.emit({ type: 'tasks', userId });
     return task;
   }
 
@@ -53,6 +59,7 @@ export class TasksService {
       throw new NotFoundException('Task not found');
     }
 
+    this.events.emit({ type: 'tasks', userId });
     return task;
   }
 
@@ -61,6 +68,8 @@ export class TasksService {
       .delete(tasks)
       .where(and(eq(tasks.userId, userId), eq(tasks.isCompleted, true)))
       .returning();
+
+    this.events.emit({ type: 'tasks', userId });
 
     return { deleted: deleted.length };
   }

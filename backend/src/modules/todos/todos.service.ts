@@ -3,10 +3,14 @@ import { eq, and } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../common/database/database.provider';
 import { todos } from '../../common/database/schema';
 import { CreateTodoDto } from './dto/create-todo.dto';
+import { EventsService } from '../../common/events/events.service';
 
 @Injectable()
 export class TodosService {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDb,
+    private readonly events: EventsService,
+  ) {}
 
   async create(userId: number, dto: CreateTodoDto) {
     const [todo] = await this.db
@@ -18,6 +22,7 @@ export class TodosService {
       })
       .returning();
 
+    this.events.emit({ type: 'todos', userId });
     return todo;
   }
 
@@ -40,6 +45,7 @@ export class TodosService {
       throw new NotFoundException('Todo not found');
     }
 
+    this.events.emit({ type: 'todos', userId });
     return todo;
   }
 
@@ -53,6 +59,7 @@ export class TodosService {
       throw new NotFoundException('Todo not found');
     }
 
+    this.events.emit({ type: 'todos', userId });
     return todo;
   }
 
@@ -62,6 +69,7 @@ export class TodosService {
       .where(and(eq(todos.userId, userId), eq(todos.isCompleted, true)))
       .returning();
 
+    this.events.emit({ type: 'todos', userId });
     return { deleted: deleted.length };
   }
 }

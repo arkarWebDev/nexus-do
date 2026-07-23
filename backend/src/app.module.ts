@@ -5,6 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { DatabaseModule } from './common/database/database.module';
+import { EventsModule } from './common/events/events.module';
+import { EventsController } from './common/events/events.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { TodosModule } from './modules/todos/todos.module';
@@ -32,12 +34,13 @@ const conditionalImports = botToken
     ConfigModule.forRoot({ isGlobal: true }),
     ...conditionalImports,
     DatabaseModule,
+    EventsModule,
     AuthModule,
     TasksModule,
     TodosModule,
     UsersModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, EventsController],
   providers: [AppService],
 })
 export class AppModule {}

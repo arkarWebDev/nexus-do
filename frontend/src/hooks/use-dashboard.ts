@@ -35,9 +35,9 @@ export function useDashboard(): UseDashboardReturn {
 
   const clearError = useCallback(() => setError(''), []);
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (resetLoading = true) => {
     try {
-      setIsLoading(true);
+      if (resetLoading) setIsLoading(true);
       const [taskData, todoData] = await Promise.all([
         apiGet<Task[]>('/tasks'),
         apiGet<Todo[]>('/todos'),
@@ -48,11 +48,19 @@ export function useDashboard(): UseDashboardReturn {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load data');
     } finally {
-      setIsLoading(false);
+      if (resetLoading) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+    const es = new EventSource(`${base}/events`, { withCredentials: true });
+    es.onmessage = () => fetchAll(false);
+    es.onerror = () => {};
+    return () => es.close();
+  }, [fetchAll]);
 
   const wrapMutation = useCallback(
     async (fn: () => Promise<void>, fallback: string) => {
